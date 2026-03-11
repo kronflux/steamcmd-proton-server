@@ -1,0 +1,144 @@
+# Generic Game Server Template
+# Use this as a starting point for any game
+
+services:
+  game-server:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: game-server
+    restart: unless-stopped
+
+    environment:
+      # ==========================================
+      # REQUIRED VARIABLES - CUSTOMIZE THESE
+      # ==========================================
+      - STEAM_APP_ID=123456              # CHANGE: Your game's Steam App ID
+      - GAME_EXECUTABLE=Server.exe       # CHANGE: Server executable name
+
+      # Game preset (leave 'generic' for custom games)
+      - GAME_CONFIG=generic
+
+      # Operation mode
+      # steam   - Auto-download via SteamCMD (default)
+      # download- Download from URL
+      # direct  - Use pre-existing game files
+      - GAME_MODE=steam
+
+      # ==========================================
+      # SERVER CONFIGURATION
+      # ==========================================
+      - SERVER_NAME=My Server            # Server display name
+      - SERVER_PASSWORD=                 # Empty = public server
+      - GAME_PORT=7777                   # Primary game port
+      - QUERY_PORT=7778                  # Query port for server browser
+      - MAX_PLAYERS=10                   # Max connected players
+
+      # ==========================================
+      # AUTHENTICATION
+      # ==========================================
+      # For public games (no login required)
+      - STEAM_USER=anonymous
+      - STEAM_PASSWORD=
+
+      # For games requiring ownership:
+      # - STEAM_USER=your_steam_username
+      # - STEAM_PASSWORD=your_steam_password
+      # - STEAM_GUARD_CODE=12345          # If 2FA enabled
+
+      # ==========================================
+      # OPTIONAL SETTINGS
+      # ==========================================
+      # Beta branch (if applicable)
+      # - STEAM_BETA=beta
+      # - STEAM_BETA_PASSWORD=
+
+      # Validate game files on update
+      - STEAM_VALIDATE=false
+
+      # Custom game arguments
+      # - GAME_ARGS=-batchmode -nographics
+
+      # Display (for Unity games)
+      # - NEEDS_DISPLAY=true
+      # - DISPLAY=:5
+      # - XVFB_RESOLUTION=1024x768x16
+
+      # RCON (if supported by game)
+      - RCON_ENABLED=false
+      - RCON_PORT=27015
+      - RCON_PASSWORD=
+
+      # Backup settings
+      - BACKUP_RETENTION=7
+
+    # ==========================================
+    # PORT MAPPINGS - CUSTOMIZE FOR YOUR GAME
+    # ==========================================
+    ports:
+      - "7777:7777/udp"                  # Game port
+      - "7778:7778/udp"                  # Query port
+      # Add more ports as needed for your game:
+      # - "27015:27015/udp"
+      # - "8766:8766/udp"
+
+    # ==========================================
+    # VOLUME MAPPINGS
+    # ==========================================
+    volumes:
+      # Persistent data (configs, saves, backups)
+      - ./game-data:/data
+
+      # Optional: Pre-mounted game files (use with GAME_MODE=direct)
+      # - ./game-files:/game
+
+    # ==========================================
+    # NETWORK OPTIONS
+    # ==========================================
+    # For better performance with multiple ports:
+    # network_mode: host
+
+    # ==========================================
+    # RESOURCE LIMITS (OPTIONAL)
+    # ==========================================
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+# ==========================================
+# FINDING YOUR GAME'S CONFIGURATION
+# ==========================================
+#
+# 1. Steam App ID: https://steamdb.info/apps/
+#    Search for your game and find the Windows Dedicated Server App ID
+#
+# 2. Executable name: Check game documentation or run:
+#    docker run --rm -v ./game:/game richardjones/steamcmd-proton-server:latest \
+#      bash -c "find /game -name '*.exe' | grep -i server"
+#
+# 3. Required ports: Check game documentation or SteamDB
+#
+# ==========================================
+# COMMON GAME CONFIGURATIONS
+# ==========================================
+#
+# Valheim:
+#   STEAM_APP_ID=896660
+#   GAME_EXECUTABLE=valheim_server.exe
+#   GAME_PORT=2456
+#   QUERY_PORT=2457
+#
+# DayZ:
+#   STEAM_APP_ID=223350
+#   GAME_EXECUTABLE=DayZServer.exe
+#   GAME_PORT=2302
+#   QUERY_PORT=2303
+#
+# Subnautica:
+#   STEAM_APP_ID=447530
+#   GAME_EXECUTABLE=SubnauticaServer.exe
+#   GAME_PORT=7777
+#   QUERY_PORT=7778

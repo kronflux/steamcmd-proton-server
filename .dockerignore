@@ -1,0 +1,36 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Documentation
+README.md
+LICENSE
+.env.example
+
+# CI/CD
+.gitlab-ci.yml
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.log
+*.tmp
+dist/
+build/
+
+# Data directories (not needed in image)
+data/
+game/
+backups/
+*.tar.gz
+*.zip

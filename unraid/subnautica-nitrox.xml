@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>subnautica-nitrox</Name>
+  <Repository>kronflux/steamcmd-proton-server:latest</Repository>
+  <Registry>https://hub.docker.com/r/kronflux/steamcmd-proton-server</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/kronflux/steamcmd-proton-server</Support>
+  <Project>https://github.com/kronflux/steamcmd-proton-server</Project>
+  <Overview>Subnautica Multiplayer Server using the Nitrox mod.&#xD;
+&#xD;
+Nitrox is a native Linux server — Proton is NOT used for this game.&#xD;
+&#xD;
+**Data layout (all under /data):**&#xD;
+- /data/server/Subnautica/ — Subnautica game files&#xD;
+- /data/server/Nitrox/ — Nitrox server files&#xD;
+- /data/saves/ — world saves (per save name)&#xD;
+- /data/logs/ — server.log&#xD;
+- /data/backups/ — automated daily backups&#xD;
+&#xD;
+**Requirements:** You must own Subnautica on the Steam account used for download.&#xD;
+Set STEAM_USER and STEAM_PASSWORD (or use STEAM_GUARD_CODE for 2FA accounts).&#xD;
+&#xD;
+**Port:** 11000/udp</Overview>
+  <Category>GameServers:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/kronflux/steamcmd-proton-server/main/unraid/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- App Data Volume -->
+  <Config Name="App Data" Target="/data" Default="/mnt/user/appdata/subnautica-nitrox" Mode="rw" Description="Stores server files (/server), saves (/saves), logs (/logs), and backups (/backups)." Type="Path" Display="always" Required="true">/mnt/user/appdata/subnautica-nitrox</Config>
+
+  <!-- Server Identity -->
+  <Config Name="Server Password" Target="SERVER_PASSWORD" Default="" Description="Server join password. Leave empty for a public server." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Save Name" Target="NITROX_SAVE_NAME" Default="MyServer" Description="Name of the save slot to load/create." Type="Variable" Display="always" Required="false" Mask="false">MyServer</Config>
+  <Config Name="Max Players" Target="MAX_PLAYERS" Default="100" Description="Maximum concurrent players." Type="Variable" Display="always" Required="false" Mask="false">100</Config>
+
+  <!-- Steam Authentication (required — Subnautica is not free) -->
+  <Config Name="Steam Username" Target="STEAM_USER" Default="" Description="Steam account username. Required to download Subnautica." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Steam Password" Target="STEAM_PASSWORD" Default="" Description="Steam account password." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Steam Guard Code" Target="STEAM_GUARD_CODE" Default="" Description="Steam Guard 2FA code if your account has it enabled." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <!-- Ports (variables) -->
+  <Config Name="Game Port" Target="GAME_PORT" Default="11000" Description="Nitrox server port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">11000</Config>
+
+  <!-- Steam -->
+  <Config Name="Validate Files" Target="STEAM_VALIDATE" Default="false" Description="Re-validate game files on each start (true/false)." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Backup Retention" Target="BACKUP_RETENTION" Default="7" Description="Days to keep automated backups." Type="Variable" Display="advanced" Required="false" Mask="false">7</Config>
+
+  <!-- Read-only -->
+  <Config Name="Game Config" Target="GAME_CONFIG" Default="subnautica-nitrox" Description="Game preset selector. Do not change." Type="Variable" Display="advanced-hide" Required="false" Mask="false">subnautica-nitrox</Config>
+  <Config Name="Steam App ID" Target="STEAM_APP_ID" Default="264710" Description="Subnautica App ID. Do not change." Type="Variable" Display="advanced-hide" Required="true" Mask="false">264710</Config>
+
+  <!-- Port Mappings -->
+  <Config Name="Game Port (UDP)" Target="11000" Default="11000" Mode="udp" Description="Nitrox Game Port" Type="Port" Display="always" Required="true" Mask="false">11000</Config>
+</Container>

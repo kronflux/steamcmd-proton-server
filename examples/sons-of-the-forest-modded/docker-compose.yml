@@ -1,0 +1,69 @@
+# Sons of the Forest Dedicated Server with RedLoader Mod Support
+# RedLoader: https://github.com/ToniMacaroni/RedLoader
+
+services:
+  sons-of-the-forest-modded:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: sons-of-the-forest-modded
+    restart: unless-stopped
+
+    environment:
+      # Core (preset sets STEAM_APP_ID, PROTON_APP_ID, GAME_EXECUTABLE, NEEDS_DISPLAY)
+      - GAME_CONFIG=sons-of-the-forest-modded
+
+      # Server Identity
+      - SERVER_NAME=SotF Modded Server
+      - SERVER_PASSWORD=                 # Leave empty for public server
+      - MAX_PLAYERS=8
+      - SAVE_SLOT=1                      # Save slot (1-5)
+
+      # Game settings
+      - SOTF_GAME_MODE=Normal            # Normal|Hard|HardSurvival|Peaceful|Creative|Custom
+      - SOTF_SAVE_MODE=Continue          # Continue|CoopSurvival
+      - SOTF_SAVE_INTERVAL=600           # Auto-save interval in seconds
+      - SOTF_LAN_ONLY=false              # Restrict to LAN (true/false)
+      - SOTF_VERBOSE_LOGGING=false       # Enable -verboseLogging (generates large logs)
+      # - SOTF_OWNER_STEAM_IDS=          # Comma-separated 64-bit SteamIDs for server admins
+
+      # Ports (must match port mappings below)
+      - GAME_PORT=8766
+      - QUERY_PORT=27016
+      - BLOBSYNC_PORT=9700
+
+      # Steam
+      - STEAM_USER=anonymous
+      - STEAM_VALIDATE=false
+
+      # RedLoader
+      - INSTALL_REDLOADER=true           # Enable RedLoader installation
+      - REDLOADER_VERSION=latest         # Or specify: v1.2.3
+
+      # Backup
+      - BACKUP_RETENTION=7
+
+    ports:
+      - "8766:8766/udp"
+      - "27016:27016/udp"
+      - "9700:9700/udp"
+
+    volumes:
+      - ./data:/data                     # Server files, saves, configs, backups
+      # Mods live inside the server dir — bind-mount for easy management:
+      # - ./mods:/data/server/Mods
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+# RedLoader Setup:
+# 1. Start container (downloads game + RedLoader): docker-compose up -d
+# 2. Wait for "RedLoader installed successfully" in logs
+# 3. Stop container: docker-compose down
+# 4. Add mods to ./data/server/Mods/ (or use the bind-mount above)
+#    Download mods from: https://thunderstore.io/c/sons_of_the_forest/
+# 5. Restart: docker-compose up -d

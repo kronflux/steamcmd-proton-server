@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<Containers>
+  <Template>
+    <Repository>kronflux/steamcmd-proton-server</Repository>
+    <Name>sons-of-the-forest</Name>
+    <URL>https://raw.githubusercontent.com/kronflux/steamcmd-proton-server/main/unraid/sons-of-the-forest.xml</URL>
+    <Icon>https://raw.githubusercontent.com/kronflux/steamcmd-proton-server/main/unraid/icon.png</Icon>
+  </Template>
+</Containers>

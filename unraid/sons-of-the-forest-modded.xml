@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>sons-of-the-forest-modded</Name>
+  <Repository>kronflux/steamcmd-proton-server:latest</Repository>
+  <Registry>https://hub.docker.com/r/kronflux/steamcmd-proton-server</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/kronflux/steamcmd-proton-server</Support>
+  <Project>https://github.com/kronflux/steamcmd-proton-server</Project>
+  <Overview>Sons of the Forest Dedicated Server with RedLoader mod support.&#xD;
+&#xD;
+Based on Debian 13 (Trixie) with GE-Proton. RedLoader enables mod loading via Thunderstore mods.&#xD;
+&#xD;
+**Data layout (all under /data):**&#xD;
+- /data/server/ — game server files + Mods/ directory&#xD;
+- /data/config/ — server config (dedicatedserver.cfg, ownerswhitelist.txt)&#xD;
+- /data/saves/ — world save slots&#xD;
+- /data/logs/ — server.log&#xD;
+- /data/backups/ — automated daily backups&#xD;
+&#xD;
+**Mod setup:**&#xD;
+1. Start container — game + RedLoader download automatically&#xD;
+2. Stop container when RedLoader installation is confirmed in logs&#xD;
+3. Drop mods into /data/server/Mods/ (from https://thunderstore.io/c/sons_of_the_forest/)&#xD;
+4. Restart</Overview>
+  <Category>GameServers:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/kronflux/steamcmd-proton-server/main/unraid/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- App Data Volume -->
+  <Config Name="App Data" Target="/data" Default="/mnt/user/appdata/sons-of-the-forest-modded" Mode="rw" Description="Stores server files (/server), saves (/saves), config (/config), logs (/logs), and backups (/backups)." Type="Path" Display="always" Required="true">/mnt/user/appdata/sons-of-the-forest-modded</Config>
+
+  <!-- Server Identity -->
+  <Config Name="Server Name" Target="SERVER_NAME" Default="SotF Modded Server" Description="Display name shown in the server browser." Type="Variable" Display="always" Required="false" Mask="false">SotF Modded Server</Config>
+  <Config Name="Server Password" Target="SERVER_PASSWORD" Default="" Description="Leave empty for a public server." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Max Players" Target="MAX_PLAYERS" Default="8" Description="Maximum concurrent players (1-8)." Type="Variable" Display="always" Required="false" Mask="false">8</Config>
+  <Config Name="Game Mode" Target="SOTF_GAME_MODE" Default="Normal" Description="Game difficulty: Normal, Hard, HardSurvival, Peaceful, Creative, or Custom." Type="Variable" Display="always" Required="false" Mask="false">Normal</Config>
+  <Config Name="Save Slot" Target="SAVE_SLOT" Default="1" Description="Save slot number (1-5)." Type="Variable" Display="always" Required="false" Mask="false">1</Config>
+  <Config Name="Owner Steam IDs" Target="SOTF_OWNER_STEAM_IDS" Default="" Description="Comma-separated 64-bit SteamIDs of server owners/admins." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <!-- RedLoader -->
+  <Config Name="Install RedLoader" Target="INSTALL_REDLOADER" Default="true" Description="Download and install RedLoader mod loader on startup (true/false)." Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="RedLoader Version" Target="REDLOADER_VERSION" Default="latest" Description="RedLoader version to install. Use 'latest' or specify a tag like v0.8.6." Type="Variable" Display="always" Required="false" Mask="false">latest</Config>
+
+  <!-- Server Settings -->
+  <Config Name="Save Mode" Target="SOTF_SAVE_MODE" Default="Continue" Description="Save behaviour: Continue (resume last save) or CoopSurvival." Type="Variable" Display="advanced" Required="false" Mask="false">Continue</Config>
+  <Config Name="Save Interval" Target="SOTF_SAVE_INTERVAL" Default="600" Description="Auto-save interval in seconds." Type="Variable" Display="advanced" Required="false" Mask="false">600</Config>
+  <Config Name="LAN Only" Target="SOTF_LAN_ONLY" Default="false" Description="Restrict server to LAN only (true/false)." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Verbose Logging" Target="SOTF_VERBOSE_LOGGING" Default="false" Description="Enable -verboseLogging for detailed output (true/false). Generates large logs." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+
+  <!-- Ports (variables) -->
+  <Config Name="Game Port" Target="GAME_PORT" Default="8766" Description="Primary game port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">8766</Config>
+  <Config Name="Query Port" Target="QUERY_PORT" Default="27016" Description="Steam query port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">27016</Config>
+  <Config Name="BlobSync Port" Target="BLOBSYNC_PORT" Default="9700" Description="BlobSync port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">9700</Config>
+
+  <!-- Steam -->
+  <Config Name="Validate Files" Target="STEAM_VALIDATE" Default="false" Description="Re-validate game files on each start (true/false)." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Backup Retention" Target="BACKUP_RETENTION" Default="7" Description="Days to keep automated backups." Type="Variable" Display="advanced" Required="false" Mask="false">7</Config>
+
+  <!-- Read-only -->
+  <Config Name="Game Config" Target="GAME_CONFIG" Default="sons-of-the-forest-modded" Description="Game preset selector. Do not change." Type="Variable" Display="advanced-hide" Required="false" Mask="false">sons-of-the-forest-modded</Config>
+  <Config Name="Steam App ID" Target="STEAM_APP_ID" Default="2465200" Description="SotF Dedicated Server App ID. Do not change." Type="Variable" Display="advanced-hide" Required="true" Mask="false">2465200</Config>
+  <Config Name="Proton App ID" Target="PROTON_APP_ID" Default="1326470" Description="SotF Game Client App ID for Wine prefix. Do not change." Type="Variable" Display="advanced-hide" Required="false" Mask="false">1326470</Config>
+
+  <!-- Port Mappings -->
+  <Config Name="Game Port (UDP)" Target="8766" Default="8766" Mode="udp" Description="Game Port" Type="Port" Display="always" Required="true" Mask="false">8766</Config>
+  <Config Name="Query Port (UDP)" Target="27016" Default="27016" Mode="udp" Description="Steam Query Port" Type="Port" Display="always" Required="true" Mask="false">27016</Config>
+  <Config Name="BlobSync Port (UDP)" Target="9700" Default="9700" Mode="udp" Description="BlobSync Port" Type="Port" Display="always" Required="true" Mask="false">9700</Config>
+</Container>

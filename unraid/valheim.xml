@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>valheim</Name>
+  <Repository>kronflux/steamcmd-proton-server:latest</Repository>
+  <Registry>https://hub.docker.com/r/kronflux/steamcmd-proton-server</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/kronflux/steamcmd-proton-server</Support>
+  <Project>https://github.com/kronflux/steamcmd-proton-server</Project>
+  <Overview>Valheim Dedicated Server running under Proton.&#xD;
+&#xD;
+**Data layout (all under /data):**&#xD;
+- /data/server/ — game server files&#xD;
+- /data/saves/ — world saves&#xD;
+- /data/logs/ — server.log&#xD;
+- /data/backups/ — automated daily backups&#xD;
+&#xD;
+**Ports:** 2456/udp (game), 2457/udp (query)&#xD;
+&#xD;
+**First Run:** Container downloads game files on first start.</Overview>
+  <Category>GameServers:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/kronflux/steamcmd-proton-server/main/unraid/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- App Data Volume -->
+  <Config Name="App Data" Target="/data" Default="/mnt/user/appdata/valheim" Mode="rw" Description="Stores server files (/server), saves (/saves), logs (/logs), and backups (/backups)." Type="Path" Display="always" Required="true">/mnt/user/appdata/valheim</Config>
+
+  <!-- Server Identity -->
+  <Config Name="Server Name" Target="SERVER_NAME" Default="Valheim Server" Description="Display name shown in the server browser." Type="Variable" Display="always" Required="false" Mask="false">Valheim Server</Config>
+  <Config Name="Server Password" Target="SERVER_PASSWORD" Default="" Description="Server password (minimum 5 characters, or leave empty — note: empty allows anyone to join)." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="World Name" Target="WORLD_NAME" Default="Dedicated" Description="Name of the world file to load/create." Type="Variable" Display="always" Required="false" Mask="false">Dedicated</Config>
+
+  <!-- Ports (variables) -->
+  <Config Name="Game Port" Target="GAME_PORT" Default="2456" Description="Primary game port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">2456</Config>
+  <Config Name="Query Port" Target="QUERY_PORT" Default="2457" Description="Steam query port — must be GAME_PORT+1." Type="Variable" Display="advanced" Required="false" Mask="false">2457</Config>
+
+  <!-- Steam -->
+  <Config Name="Validate Files" Target="STEAM_VALIDATE" Default="false" Description="Re-validate game files on each start (true/false)." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Backup Retention" Target="BACKUP_RETENTION" Default="7" Description="Days to keep automated backups." Type="Variable" Display="advanced" Required="false" Mask="false">7</Config>
+
+  <!-- Read-only -->
+  <Config Name="Game Config" Target="GAME_CONFIG" Default="valheim" Description="Game preset selector. Do not change." Type="Variable" Display="advanced-hide" Required="false" Mask="false">valheim</Config>
+  <Config Name="Steam App ID" Target="STEAM_APP_ID" Default="896660" Description="Valheim Dedicated Server App ID. Do not change." Type="Variable" Display="advanced-hide" Required="true" Mask="false">896660</Config>
+
+  <!-- Port Mappings -->
+  <Config Name="Game Port (UDP)" Target="2456" Default="2456" Mode="udp" Description="Game Port" Type="Port" Display="always" Required="true" Mask="false">2456</Config>
+  <Config Name="Query Port (UDP)" Target="2457" Default="2457" Mode="udp" Description="Steam Query Port (Game Port + 1)" Type="Port" Display="always" Required="true" Mask="false">2457</Config>
+</Container>

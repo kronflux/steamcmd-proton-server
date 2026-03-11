@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>dayz</Name>
+  <Repository>kronflux/steamcmd-proton-server:latest</Repository>
+  <Registry>https://hub.docker.com/r/kronflux/steamcmd-proton-server</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/kronflux/steamcmd-proton-server</Support>
+  <Project>https://github.com/kronflux/steamcmd-proton-server</Project>
+  <Overview>DayZ Dedicated Server running under Proton.&#xD;
+&#xD;
+**Data layout (all under /data):**&#xD;
+- /data/server/ — game server files&#xD;
+- /data/config/ — server.cfg&#xD;
+- /data/saves/ — mission/world saves&#xD;
+- /data/logs/ — server.log&#xD;
+- /data/backups/ — automated daily backups&#xD;
+&#xD;
+**Ports:** 2302/udp (game), 2303/udp (query), 2304/udp (BattlEye)&#xD;
+&#xD;
+**First Run:** Container downloads ~3GB of game files on first start.</Overview>
+  <Category>GameServers:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/kronflux/steamcmd-proton-server/main/unraid/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- App Data Volume -->
+  <Config Name="App Data" Target="/data" Default="/mnt/user/appdata/dayz" Mode="rw" Description="Stores server files (/server), config (/config), saves (/saves), logs (/logs), and backups (/backups)." Type="Path" Display="always" Required="true">/mnt/user/appdata/dayz</Config>
+
+  <!-- Server Identity -->
+  <Config Name="Server Name" Target="SERVER_NAME" Default="DayZ Server" Description="Display name shown in the server browser." Type="Variable" Display="always" Required="false" Mask="false">DayZ Server</Config>
+  <Config Name="Server Password" Target="SERVER_PASSWORD" Default="" Description="Leave empty for a public server." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Admin Password" Target="ADMIN_PASSWORD" Default="" Description="Admin password for server management." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Max Players" Target="MAX_PLAYERS" Default="60" Description="Maximum concurrent players." Type="Variable" Display="always" Required="false" Mask="false">60</Config>
+
+  <!-- Ports (variables) -->
+  <Config Name="Game Port" Target="GAME_PORT" Default="2302" Description="Primary game port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">2302</Config>
+  <Config Name="Query Port" Target="QUERY_PORT" Default="2303" Description="Steam query port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">2303</Config>
+
+  <!-- Steam -->
+  <Config Name="Validate Files" Target="STEAM_VALIDATE" Default="false" Description="Re-validate game files on each start (true/false)." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Backup Retention" Target="BACKUP_RETENTION" Default="7" Description="Days to keep automated backups." Type="Variable" Display="advanced" Required="false" Mask="false">7</Config>
+
+  <!-- Read-only -->
+  <Config Name="Game Config" Target="GAME_CONFIG" Default="dayz" Description="Game preset selector. Do not change." Type="Variable" Display="advanced-hide" Required="false" Mask="false">dayz</Config>
+  <Config Name="Steam App ID" Target="STEAM_APP_ID" Default="223350" Description="DayZ Dedicated Server App ID. Do not change." Type="Variable" Display="advanced-hide" Required="true" Mask="false">223350</Config>
+
+  <!-- Port Mappings -->
+  <Config Name="Game Port (UDP)" Target="2302" Default="2302" Mode="udp" Description="Game Port" Type="Port" Display="always" Required="true" Mask="false">2302</Config>
+  <Config Name="Query Port (UDP)" Target="2303" Default="2303" Mode="udp" Description="Steam Query Port" Type="Port" Display="always" Required="true" Mask="false">2303</Config>
+  <Config Name="BattlEye Port (UDP)" Target="2304" Default="2304" Mode="udp" Description="BattlEye Anti-Cheat Port" Type="Port" Display="always" Required="true" Mask="false">2304</Config>
+</Container>

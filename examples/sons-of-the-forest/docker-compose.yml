@@ -1,0 +1,54 @@
+# Sons of the Forest Dedicated Server
+
+services:
+  sons-of-the-forest:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: sons-of-the-forest
+    restart: unless-stopped
+
+    environment:
+      # Core (preset sets STEAM_APP_ID, PROTON_APP_ID, GAME_EXECUTABLE, NEEDS_DISPLAY)
+      - GAME_CONFIG=sons-of-the-forest
+
+      # Server Identity
+      - SERVER_NAME=SotF Docker Server
+      - SERVER_PASSWORD=                 # Leave empty for public server
+      - MAX_PLAYERS=8
+      - SAVE_SLOT=1                      # Save slot (1-5)
+
+      # Game settings
+      - SOTF_GAME_MODE=Normal            # Normal|Hard|HardSurvival|Peaceful|Creative|Custom
+      - SOTF_SAVE_MODE=Continue          # Continue|CoopSurvival
+      - SOTF_SAVE_INTERVAL=600           # Auto-save interval in seconds
+      - SOTF_LAN_ONLY=false              # Restrict to LAN (true/false)
+      - SOTF_VERBOSE_LOGGING=false       # Enable -verboseLogging (generates large logs)
+      # - SOTF_OWNER_STEAM_IDS=          # Comma-separated 64-bit SteamIDs for server admins
+
+      # Ports (must match port mappings below)
+      - GAME_PORT=8766
+      - QUERY_PORT=27016
+      - BLOBSYNC_PORT=9700
+
+      # Steam
+      - STEAM_USER=anonymous
+      - STEAM_VALIDATE=false
+
+      # Backup
+      - BACKUP_RETENTION=7
+
+    ports:
+      - "8766:8766/udp"
+      - "27016:27016/udp"
+      - "9700:9700/udp"
+
+    volumes:
+      - ./data:/data
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G

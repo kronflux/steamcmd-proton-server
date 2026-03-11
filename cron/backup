@@ -1,0 +1,18 @@
+# Cron job for automated backups
+# This file is copied to /etc/cron.d/backup during container build
+
+# Default: Daily backup at 3 AM
+# Format: minute hour day month day-of-week command
+0 3 * * * root /scripts/backup.sh >> /var/log/backup.log 2>&1
+
+# You can customize this by mounting a custom cron file to /etc/cron.d/backup
+
+# Examples:
+# Every 6 hours:
+# 0 */6 * * * root /scripts/backup.sh >> /var/log/backup.log 2>&1
+
+# Every 12 hours:
+# 0 */12 * * * root /scripts/backup.sh >> /var/log/backup.log 2>&1
+
+# Weekly on Sunday at 2 AM:
+# 0 2 * * 0 root /scripts/backup.sh >> /var/log/backup.log 2>&1

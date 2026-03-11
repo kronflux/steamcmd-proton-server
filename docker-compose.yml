@@ -1,0 +1,62 @@
+# Universal SteamCMD Proton Server - Generic Template
+# This template works for any Windows-based Steam dedicated server
+
+services:
+  steamcmd-proton-server:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: game-server
+    restart: unless-stopped
+
+    # Core environment variables (REQUIRED)
+    environment:
+      - STEAM_APP_ID=123456              # REQUIRED: Your game's Steam App ID
+      - GAME_EXECUTABLE=Server.exe       # REQUIRED: Name of server executable
+      - GAME_CONFIG=generic              # Game preset (leave 'generic' for custom)
+
+      # Operation Mode
+      - GAME_MODE=steam                  # steam|download|direct
+
+      # Server Configuration
+      - SERVER_NAME=Dedicated Server     # Server display name
+      - GAME_PORT=7777                   # Primary game port
+      - QUERY_PORT=7778                  # Query/port for server browser
+      - MAX_PLAYERS=10                   # Max player count
+
+      # Authentication (optional, default: anonymous)
+      - STEAM_USER=anonymous
+      - STEAM_PASSWORD=
+
+      # RCON (optional)
+      - RCON_ENABLED=false
+      - RCON_PORT=27015
+      - RCON_PASSWORD=
+
+      # Proton/Steam Settings
+      - STEAM_VALIDATE=false             # Validate files on update
+
+    # Port mappings - UPDATE THESE FOR YOUR GAME
+    ports:
+      - "${GAME_PORT}:${GAME_PORT}/udp"
+      - "${QUERY_PORT}:${QUERY_PORT}/udp"
+
+    # Volume mappings
+    volumes:
+      - ./data:/data                      # Persist data (game files, proton prefix, saves, backups)
+
+    # Optional: Host networking for better performance
+    # network_mode: host
+
+    # Optional: Resource limits
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4'
+    #       memory: 8G
+    #     reservations:
+    #       cpus: '2'
+    #       memory: 4G
+
+# Optional: Define network
+# networks:
+#   default:
+#     name: game-server-network

@@ -1,0 +1,112 @@
+# Subnautica Dedicated Server with Nitrox Multiplayer Mod
+# Nitrox: https://github.com/SubnauticaNitrox/Nitrox
+
+services:
+  subnautica-nitrox:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: subnautica-nitrox
+    restart: unless-stopped
+
+    environment:
+      # Core Configuration
+      - GAME_CONFIG=subnautica-nitrox
+      - STEAM_APP_ID=447530              # Subnautica App ID
+      - GAME_EXECUTABLE=Subnautica.exe
+      - GAME_MODE=steam
+
+      # Server Identity
+      - SERVER_NAME=Subnautica Nitrox Server
+      - SERVER_PASSWORD=55555            # Default Nitrox password
+      - ADMIN_PASSWORD=Chickenpotpie101  # Default admin password
+      - GAME_PORT=11000                  # Nitrox default port
+      - QUERY_PORT=27015                 # Query port
+
+      # Gameplay
+      - MAX_PLAYERS=100
+      - GAME_MODE=SURVIVAL               # SURVIVAL|FREEDOM|HARDCORE|CREATIVE
+
+      # Nitrox Save Configuration
+      - NITROX_SAVE_NAME=MyServer        # Save slot name
+
+      # Steam
+      - STEAM_USER=anonymous
+      - STEAM_VALIDATE=false
+
+      # ==========================================
+      # NITROX MOD CONFIGURATION
+      # ==========================================
+      # Nitrox will be installed on first run to:
+      # /game/Nitrox/ (Nitrox server files)
+      # /root/.config/Nitrox/ (Nitrox config)
+
+      # Nitrox Server Configuration (created in /data/saves/MyServer/server.cfg)
+      # After first run, edit: ./data/saves/MyServer/server.cfg
+
+      # Key Nitrox Settings:
+      - NITROX_PORT=11000                # Server port
+      - NITROX_MAX_CONNECTIONS=100       # Max players
+      - NITROX_SAVE_INTERVAL=120000      # Auto-save interval (ms)
+      - NITROX_MAX_BACKUPS=10            # Max save backups
+      - NITROX_PVP_ENABLED=false         # PvP enabled
+      - NITROX_LAN_DISCOVERY=true        # LAN discovery
+      - NITROX_AUTO_PORT_FORWARD=false   # UPnP port forwarding
+
+      # ==========================================
+
+      # Proton (Nitrox has native Linux components)
+      - NEEDS_DISPLAY=false              # Nitrox doesn't need Xvfb
+      - INSTALL_DOTNET9=true             # Nitrox requires .NET 9
+
+      # Backup
+      - BACKUP_RETENTION=7               # Keep 7 days of backups
+
+    ports:
+      - "11000:11000/udp"                # Nitrox game port
+      - "27015:27015/udp"                # Query port
+
+    volumes:
+      - ./nitrox-data:/data              # Saves, configs, backups
+      # Optional: Pre-mounted game files for faster restarts
+      # - ./subnautica-game:/game         # Use with GAME_MODE=direct
+
+    # Recommended for games
+    # network_mode: host
+
+    # Resource recommendations for Nitrox
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+# Nitrox Setup Instructions:
+#
+# 1. First Run (downloads game + Nitrox):
+#    docker-compose up -d
+#    docker-compose logs -f
+#
+# 2. Wait until you see: "Nitrox setup completed successfully"
+#
+# 3. The server will start with default settings.
+#    Edit configuration at: ./nitrox-data/saves/MyServer/server.cfg
+#
+# 4. Common Configuration Changes:
+#    - ServerPassword: Change server password
+#    - AdminPassword: Change admin password
+#    - MaxConnections: Adjust max players
+#    - GameMode: SURVIVAL|FREEDOM|HARDCORE|CREATIVE
+#    - Seed: Leave blank for random, or specify a seed
+#
+# 5. Restart after config changes:
+#    docker-compose restart
+#
+# Note: Nitrox uses a native Linux server component, not Proton
+# The Subnautica game files are still downloaded for asset loading
+#
+# Client Setup:
+# 1. Install Nitrox client mod on your Subnautica installation
+# 2. Launch via Nitrox launcher
+# 3. Search for your server or connect via IP:PORT

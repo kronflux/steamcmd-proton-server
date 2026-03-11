@@ -1,0 +1,36 @@
+# Data directories
+/data/
+/game/
+/backups/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker volumes
+docker-compose.override.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Test files
+test-data/
+test-wine/
