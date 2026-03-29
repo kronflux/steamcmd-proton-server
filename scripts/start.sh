@@ -218,6 +218,15 @@ main() {
         dayz)
             base_args="-config=server.cfg -port=${GAME_PORT:-2302}"
             ;;
+        starrupture)
+            base_args="-Log -nosound -Port=${GAME_PORT:-7777} -QueryPort=${QUERY_PORT:-27015} -ServerName=\"${SERVER_NAME}\" -MULTIHOME=0.0.0.0"
+            if [[ "${SR_DISABLE_WEB_CONTROL:-true}" == "true" ]]; then
+                base_args="${base_args} -RCWebControlDisable"
+            fi
+            if [[ "${SR_DISABLE_WEB_INTERFACE:-true}" == "true" ]]; then
+                base_args="${base_args} -RCWebInterfaceDisable"
+            fi
+            ;;
     esac
     local game_args="${base_args}${GAME_ARGS:+ ${GAME_ARGS}}"
 

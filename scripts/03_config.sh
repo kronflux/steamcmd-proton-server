@@ -35,6 +35,9 @@ generate_game_config() {
         dayz)
             generate_dayz_config
             ;;
+        starrupture)
+            generate_starrupture_config
+            ;;
         *)
             log_warn "No specific config generator for: $game"
             generate_generic_config
@@ -321,6 +324,79 @@ storageAutoFix = 1;
 EOF
 
     log_success "DayZ configuration created"
+}
+
+# Star Rupture Configuration
+generate_starrupture_config() {
+    log_info "Generating Star Rupture configuration..."
+
+    local config_dir="${DATA_DIR}/config"
+    local saves_dir="${DATA_DIR}/saves"
+    local ds_settings="${GAME_DIR}/DSSettings.txt"
+
+    mkdir -p "${config_dir}" "${saves_dir}"
+
+    # ---- DSSettings.txt ----
+    # Config file lives in /data/config/ for easy access.
+    # GAME_DIR/DSSettings.txt is a symlink pointing back to /data/config/.
+    # Migrates any pre-existing game files to /data/config/ on upgrade.
+
+    # Migrate existing real file from game dir to config dir
+    if [[ -f "${ds_settings}" && ! -L "${ds_settings}" ]]; then
+        if [[ ! -s "${config_dir}/DSSettings.txt" ]]; then
+            cp "${ds_settings}" "${config_dir}/DSSettings.txt"
+            log_info "Migrated DSSettings.txt → ${config_dir}/"
+        fi
+        rm -f "${ds_settings}"
+    fi
+    # Remove stale symlink if present (e.g. from a previous run)
+    [[ -L "${ds_settings}" ]] && rm -f "${ds_settings}"
+
+    # Generate from environment variables if no config exists yet
+    if [[ ! -f "${config_dir}/DSSettings.txt" ]]; then
+        local start_new_val
+        case "${SR_START_NEW_GAME:-false}" in true|True|TRUE|1|yes) start_new_val="true" ;; *) start_new_val="false" ;; esac
+        local load_saved_val
+        case "${SR_LOAD_SAVED_GAME:-true}" in false|False|FALSE|0|no) load_saved_val="false" ;; *) load_saved_val="true" ;; esac
+
+        cat > "${config_dir}/DSSettings.txt" << EOF
+{
+  "SessionName": "${SR_SESSION_NAME:-StarRuptureServer}",
+  "SaveGameInterval": "${SR_SAVE_INTERVAL:-300}",
+  "StartNewGame": "${start_new_val}",
+  "LoadSavedGame": "${load_saved_val}",
+  "SaveGameName": "${SR_SAVE_GAME_NAME:-AutoSave0.sav}"
+}
+EOF
+        log_success "Generated DSSettings.txt"
+    else
+        log_info "Using existing DSSettings.txt from ${config_dir}/"
+    fi
+
+    # Symlink: GAME_DIR/DSSettings.txt → /data/config/DSSettings.txt
+    ln -sf "${config_dir}/DSSettings.txt" "${ds_settings}"
+
+    # ---- SaveGames directory symlink ----
+    # Saves live in /data/saves/; game dir SaveGames/ is a symlink to it.
+    local game_saves="${GAME_DIR}/StarRupture/Saved/SaveGames"
+    if [[ -d "${game_saves}" && ! -L "${game_saves}" ]]; then
+        # Migrate existing saves
+        if [[ -n "$(ls -A "${game_saves}" 2>/dev/null)" ]]; then
+            if command -v rsync &>/dev/null; then
+                rsync -a "${game_saves}/" "${saves_dir}/"
+            else
+                cp -r "${game_saves}/." "${saves_dir}/"
+            fi
+            log_info "Migrated saves → ${saves_dir}/"
+        fi
+        rm -rf "${game_saves}"
+    fi
+    [[ -L "${game_saves}" ]] && rm -f "${game_saves}"
+    mkdir -p "${GAME_DIR}/StarRupture/Saved"
+    ln -sf "${saves_dir}" "${game_saves}"
+
+    log_info "Config: ${config_dir}/"
+    log_info "Saves:  ${saves_dir}/"
 }
 
 #######################################
