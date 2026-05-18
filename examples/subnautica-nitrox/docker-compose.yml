@@ -63,7 +63,6 @@ services:
 
       # Proton (Nitrox has native Linux components)
       - NEEDS_DISPLAY=false              # Nitrox doesn't need Xvfb
-      - INSTALL_DOTNET9=true             # Nitrox requires .NET 9
 
       # Backup
       - BACKUP_RETENTION=7               # Keep 7 days of backups

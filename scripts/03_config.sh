@@ -569,28 +569,13 @@ generate_nitrox_config() {
         return 0
     fi
 
-    # Install .NET 9 if needed (for Nitrox Linux component)
-    if [[ "${INSTALL_DOTNET9:-true}" == "true" ]]; then
-        log_info "Installing .NET 9 runtime for Nitrox..."
-
-        # Download and install .NET 9
-        if ! command -v dotnet &> /dev/null; then
-            local dotnet_url="https://dot.net/v1/dotnet-install.sh"
-            curl -sSL "$dotnet_url" -o /tmp/dotnet-install.sh
-            bash /tmp/dotnet-install.sh --channel 9.0 --runtime aspnetcore --install-dir /usr/share/dotnet
-            rm -f /tmp/dotnet-install.sh
-            export PATH="$PATH:/usr/share/dotnet"
-            log_success ".NET 9 installed"
-        else
-            log_info ".NET already installed"
-        fi
-    fi
-
     # Download Nitrox from GitHub
+    # .NET 9 runtime is installed in the image (see Dockerfile) — no runtime install here.
     log_info "Downloading Nitrox..."
     mkdir -p "${nitrox_path}"
 
-    local nitrox_url=$(curl -s https://api.github.com/repos/SubnauticaNitrox/Nitrox/releases/latest \
+    local nitrox_url
+    nitrox_url=$(curl -s https://api.github.com/repos/SubnauticaNitrox/Nitrox/releases/latest \
         | grep -o 'https://.*linux_x64\.zip' | head -n 1)
 
     if [[ -z "$nitrox_url" ]]; then
@@ -600,30 +585,24 @@ generate_nitrox_config() {
 
     log_info "Nitrox URL: $nitrox_url"
 
-    local filename=$(basename "$nitrox_url")
-    local tmpfile="/tmp/${filename}"
-    local tmpdir="/tmp/Nitrox"
-
+    local tmpfile="/tmp/$(basename "$nitrox_url")"
     curl -L "$nitrox_url" -o "$tmpfile"
-    rm -rf "$tmpdir"
-    mkdir -p "$tmpdir"
 
     log_info "Extracting Nitrox..."
-    unzip -q "$tmpfile" 'linux-x64/*' -d "$tmpdir"
+    # Nitrox releases now place all files at the zip root (older versions used
+    # a linux-x64/ subdirectory). Extract directly into nitrox_path.
+    unzip -qo "$tmpfile" -d "${nitrox_path}"
+    rm -f "$tmpfile"
 
-    if [[ -d "${tmpdir}/linux-x64" ]]; then
-        rsync -a "${tmpdir}/linux-x64/" "${nitrox_path}/"
-        log_success "Nitrox extracted to: ${nitrox_path}"
-    else
-        log_error "linux-x64 directory not found in Nitrox archive"
+    if [[ ! -f "${nitrox_path}/NitroxServer-Subnautica" ]]; then
+        log_error "NitroxServer-Subnautica not found in ${nitrox_path} after extraction"
+        log_info "Archive layout may have changed again. Contents:"
+        ls -la "${nitrox_path}" >&2
         return 1
     fi
 
-    rm -rf "$tmpfile" "$tmpdir"
-
-    # Make executable
     chmod +x "${nitrox_path}/NitroxServer-Subnautica"
-    log_success "Nitrox executable configured"
+    log_success "Nitrox extracted to: ${nitrox_path}"
 
     # Create Nitrox config
     log_info "Configuring Nitrox..."
