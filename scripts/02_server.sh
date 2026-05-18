@@ -82,7 +82,7 @@ handle_steam_mode() {
     steam_cache_save || true
 
     # Verify the right files for this preset actually landed in install_dir.
-    # Nitrox is a special case: GAME_EXECUTABLE (NitroxServer-Subnautica) is
+    # Nitrox is a special case: GAME_EXECUTABLE (Nitrox.Server.Subnautica) is
     # the Nitrox binary installed later by 03_config.sh into ${GAME_DIR}/Nitrox/,
     # not into the Subnautica install_dir. Verify Subnautica's own files instead.
     if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
