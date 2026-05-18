@@ -594,14 +594,14 @@ generate_nitrox_config() {
     unzip -qo "$tmpfile" -d "${nitrox_path}"
     rm -f "$tmpfile"
 
-    if [[ ! -f "${nitrox_path}/NitroxServer-Subnautica" ]]; then
-        log_error "NitroxServer-Subnautica not found in ${nitrox_path} after extraction"
+    if [[ ! -f "${nitrox_path}/Nitrox.Server.Subnautica" ]]; then
+        log_error "Nitrox.Server.Subnautica not found in ${nitrox_path} after extraction"
         log_info "Archive layout may have changed again. Contents:"
         ls -la "${nitrox_path}" >&2
         return 1
     fi
 
-    chmod +x "${nitrox_path}/NitroxServer-Subnautica"
+    chmod +x "${nitrox_path}/Nitrox.Server.Subnautica"
     log_success "Nitrox extracted to: ${nitrox_path}"
 
     # Create Nitrox config

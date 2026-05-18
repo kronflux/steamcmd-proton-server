@@ -92,8 +92,8 @@ start_nitrox_server() {
     log_info "========================================="
 
     # Verify Nitrox installation
-    if [[ ! -f "${nitrox_path}/NitroxServer-Subnautica" ]]; then
-        log_error "NitroxServer-Subnautica not found at ${nitrox_path}"
+    if [[ ! -f "${nitrox_path}/Nitrox.Server.Subnautica" ]]; then
+        log_error "Nitrox.Server.Subnautica not found at ${nitrox_path}"
         log_error "Run setup again to install Nitrox"
         exit 1
     fi
@@ -107,7 +107,7 @@ start_nitrox_server() {
     rotate_logs "$log_file"
 
     # Build Nitrox command
-    local nitrox_cmd="${nitrox_path}/NitroxServer-Subnautica --save \"${nitrox_save_name}\""
+    local nitrox_cmd="${nitrox_path}/Nitrox.Server.Subnautica --save \"${nitrox_save_name}\""
 
     log_info "========================================="
     log_info "Nitrox Configuration:"
@@ -123,7 +123,7 @@ start_nitrox_server() {
     cd "${nitrox_path}"
 
     # Start Nitrox server (native Linux, no Proton needed)
-    eval "${nitrox_path}/NitroxServer-Subnautica --save \"${nitrox_save_name}\"" >> "$log_file" 2>&1 &
+    eval "${nitrox_path}/Nitrox.Server.Subnautica --save \"${nitrox_save_name}\"" >> "$log_file" 2>&1 &
     SERVER_PID=$!
 
     log_success "Nitrox server started (PID: $SERVER_PID)"
