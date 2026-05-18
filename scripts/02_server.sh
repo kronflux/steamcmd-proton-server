@@ -76,16 +76,29 @@ handle_steam_mode() {
             +quit
     fi
 
-    # Verify game executable exists
-    if [[ ! -f "${install_dir}/${GAME_EXECUTABLE}" ]]; then
-        log_error "Game executable not found: ${install_dir}/${GAME_EXECUTABLE}"
-        log_info "Search for executable with: find ${install_dir} -name '*.exe'"
-        exit 1
-    fi
-
     # Persist the newly-written sentry file + login token so the next start
-    # can skip the Steam Guard prompt.
+    # can skip the Steam Guard prompt. Done BEFORE the executable check so a
+    # failed install check doesn't waste the user's Steam Guard backup code.
     steam_cache_save || true
+
+    # Verify the right files for this preset actually landed in install_dir.
+    # Nitrox is a special case: GAME_EXECUTABLE (NitroxServer-Subnautica) is
+    # the Nitrox binary installed later by 03_config.sh into ${GAME_DIR}/Nitrox/,
+    # not into the Subnautica install_dir. Verify Subnautica's own files instead.
+    if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
+        if [[ ! -f "${install_dir}/Subnautica.exe" ]] && [[ ! -d "${install_dir}/Subnautica_Data" ]]; then
+            log_error "Subnautica game files not found in ${install_dir}"
+            log_info "SteamCMD reported success but neither Subnautica.exe nor Subnautica_Data/ are present."
+            log_info "Inspect actual install location with: find / -name Subnautica.exe -o -name appmanifest_264710.acf 2>/dev/null"
+            exit 1
+        fi
+    else
+        if [[ ! -f "${install_dir}/${GAME_EXECUTABLE}" ]]; then
+            log_error "Game executable not found: ${install_dir}/${GAME_EXECUTABLE}"
+            log_info "Search for executable with: find ${install_dir} -name '*.exe'"
+            exit 1
+        fi
+    fi
 
     log_success "Game files ready via SteamCMD"
 }
