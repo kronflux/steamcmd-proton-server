@@ -332,10 +332,19 @@ For games requiring account ownership:
 environment:
   - STEAM_USER=your_username
   - STEAM_PASSWORD=your_password
-  - STEAM_GUARD_CODE=12345
+  - STEAM_GUARD_CODE=12345           # First login only (see below)
+  - STEAM_CACHE_KEY=set-a-private-value
 ```
 
-**Note:** Use a separate Steam account for servers. Steam Guard codes are required on first login.
+**How the Steam Guard cache works:**
+
+1. On first run, provide `STEAM_GUARD_CODE` (a TOTP code from the Steam mobile app, or a one-time backup code).
+2. SteamCMD writes a sentry file marking this container as a trusted machine.
+3. That sentry file plus the cached login token are tar'd and encrypted with `STEAM_CACHE_KEY` (AES-256-CBC + PBKDF2) and stored at `/data/.steamcmd/cache.tar.enc`.
+4. On subsequent runs the cache is decrypted and restored before SteamCMD logs in — no Guard code needed. You can clear `STEAM_GUARD_CODE` from your env after the first successful run.
+5. Change `STEAM_CACHE_KEY` to a private value; leaving it as `changeme` works but defeats the purpose. Changing it later invalidates the cache and requires one fresh Guard code to re-prime.
+
+**Note:** Use a separate Steam account for servers. Steam Guard mobile-authenticator backup codes are one-time-use, so you only get a handful of fresh logins before you need to generate new ones — the cache exists specifically to avoid burning through them.
 
 ### Custom Game Arguments
 
@@ -416,9 +425,11 @@ deploy:
 ### Steam Guard Code Required
 
 If using a non-anonymous Steam account with 2FA:
-1. Start container with credentials
-2. Container will wait for Steam Guard code
-3. Set `STEAM_GUARD_CODE` and restart
+1. On first start, set `STEAM_USER`, `STEAM_PASSWORD`, and `STEAM_GUARD_CODE` (TOTP from the mobile app or a one-time backup code).
+2. After the first successful login, the Guard session is cached under `/data/.steamcmd/`, encrypted with `STEAM_CACHE_KEY`.
+3. Clear `STEAM_GUARD_CODE` from your env afterward — restarts will use the cached session and won't prompt for a new code.
+
+If you see `ERROR (Invalid Password)` in the logs, double-check `STEAM_PASSWORD` is actually set in your env — an empty password produces this exact error. If you see `ERROR (Account Logon Denied)` or a Steam Guard prompt, the cache was wiped (e.g. you changed `STEAM_CACHE_KEY`) and you need a fresh `STEAM_GUARD_CODE` for one run.
 
 ### Corrupted Game Files
 

@@ -21,7 +21,7 @@ Nitrox is a native Linux server — Proton is NOT used for this game.&#xD;
 - /data/backups/ — automated daily backups&#xD;
 &#xD;
 **Requirements:** You must own Subnautica on the Steam account used for download.&#xD;
-Set STEAM_USER and STEAM_PASSWORD (or use STEAM_GUARD_CODE for 2FA accounts).&#xD;
+Set STEAM_USER and STEAM_PASSWORD. For 2FA accounts, also set STEAM_GUARD_CODE on first run (backup codes are one-time-use). The Steam Guard session is cached in /data encrypted with STEAM_CACHE_KEY — change it from the default 'changeme'.&#xD;
 &#xD;
 **Port:** 11000/udp</Overview>
   <Category>GameServers:</Category>
@@ -46,7 +46,8 @@ Set STEAM_USER and STEAM_PASSWORD (or use STEAM_GUARD_CODE for 2FA accounts).&#x
   <!-- Steam Authentication (required — Subnautica is not free) -->
   <Config Name="Steam Username" Target="STEAM_USER" Default="" Description="Steam account username. Required to download Subnautica." Type="Variable" Display="always" Required="true" Mask="false"></Config>
   <Config Name="Steam Password" Target="STEAM_PASSWORD" Default="" Description="Steam account password." Type="Variable" Display="always" Required="true" Mask="true"></Config>
-  <Config Name="Steam Guard Code" Target="STEAM_GUARD_CODE" Default="" Description="Steam Guard 2FA code if your account has it enabled." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Steam Guard Code" Target="STEAM_GUARD_CODE" Default="" Description="Steam Guard 2FA code (only needed on first login, or after changing Cache Key). Backup codes are one-time-use; once cached, you can clear this field." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Cache Key" Target="STEAM_CACHE_KEY" Default="changeme" Description="Passphrase used to encrypt the cached Steam Guard session in /data. Change from 'changeme' to a private value. Changing it later forces a fresh Steam Guard code." Type="Variable" Display="always" Required="false" Mask="true">changeme</Config>
 
   <!-- Ports (variables) -->
   <Config Name="Game Port" Target="GAME_PORT" Default="11000" Description="Nitrox server port (must match port mapping below)." Type="Variable" Display="advanced" Required="false" Mask="false">11000</Config>

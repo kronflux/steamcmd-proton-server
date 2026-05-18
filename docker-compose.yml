@@ -25,6 +25,8 @@ services:
       # Authentication (optional, default: anonymous)
       - STEAM_USER=anonymous
       - STEAM_PASSWORD=
+      # - STEAM_GUARD_CODE=                # First-login Steam Guard code (2FA accounts only)
+      # - STEAM_CACHE_KEY=changeme         # Passphrase encrypting the cached Guard session in /data
 
       # RCON (optional)
       - RCON_ENABLED=false

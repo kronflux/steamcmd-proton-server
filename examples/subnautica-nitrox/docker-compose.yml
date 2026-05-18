@@ -28,8 +28,16 @@ services:
       # Nitrox Save Configuration
       - NITROX_SAVE_NAME=MyServer        # Save slot name
 
-      # Steam
+      # Steam — Subnautica is not free; the Steam account used must own it.
+      # On first run set STEAM_USER, STEAM_PASSWORD, and STEAM_GUARD_CODE
+      # (the latter only if the account has 2FA). After the first successful
+      # login the Guard session is cached under /data and STEAM_GUARD_CODE
+      # can be cleared. STEAM_CACHE_KEY encrypts that cache — set a private
+      # value rather than leaving 'changeme'.
       - STEAM_USER=anonymous
+      - STEAM_PASSWORD=
+      # - STEAM_GUARD_CODE=
+      - STEAM_CACHE_KEY=changeme
       - STEAM_VALIDATE=false
 
       # ==========================================
