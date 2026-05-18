@@ -431,33 +431,121 @@ check_game_server() {
 }
 
 #######################################
-# STEAMCMD WRAPPERS
+# STEAMCMD AUTH CACHE
 #######################################
+# SteamCMD writes a sentry file (ssfn*) and a cached login token (config.vdf)
+# after a successful 2FA login. Persisting these across container restarts means
+# the user only enters a Steam Guard code once. The cache is encrypted with
+# STEAM_CACHE_KEY so the auth tokens don't sit in /data in cleartext.
 
-steamcmd_login() {
-    local steam_user="${STEAM_USER:-anonymous}"
-    local steam_pass="${STEAM_PASSWORD:-}"
-    local steam_guard="${STEAM_GUARD_CODE:-}"
+# What we persist — anything SteamCMD writes during/after login on either of
+# the two HOME-based paths it has used over the years.
+STEAM_CACHE_SOURCES=(
+    "/root/Steam/config"
+    "/root/Steam/ssfn"
+    "/root/.steam/steam/config"
+    "/root/.steam/steam/ssfn"
+)
 
-    if [[ "$steam_user" == "anonymous" ]]; then
-        echo "+login anonymous"
-    else
-        local login_cmd="+login $steam_user"
-        [[ -n "$steam_pass" ]] && login_cmd="$login_cmd $steam_pass"
-        [[ -n "$steam_guard" ]] && login_cmd="$login_cmd $steam_guard"
-        echo "$login_cmd"
-    fi
+steam_cache_path() {
+    echo "${DATA_DIR}/.steamcmd/cache.tar.enc"
 }
 
-steamcmd_update() {
-    local app_id="$1"
-    local install_dir="${2:-${GAME_DIR}}"
-    local validate="${STEAM_VALIDATE:-false}"
+steam_cache_restore() {
+    # Anonymous login has no auth state — nothing to cache.
+    if [[ "${STEAM_USER:-anonymous}" == "anonymous" ]]; then
+        return 0
+    fi
 
-    local cmd="+app_update $app_id"
-    [[ "$validate" == "true" ]] && cmd="$cmd validate"
+    local cache_file
+    cache_file="$(steam_cache_path)"
 
-    echo "$cmd +quit"
+    if [[ ! -f "$cache_file" ]]; then
+        log_info "No SteamCMD auth cache found — fresh login required"
+        return 0
+    fi
+
+    export STEAM_CACHE_KEY="${STEAM_CACHE_KEY:-changeme}"
+    if [[ "$STEAM_CACHE_KEY" == "changeme" ]]; then
+        log_warn "STEAM_CACHE_KEY is the default 'changeme' — set a private value to protect cached auth tokens"
+    fi
+
+    log_info "Restoring SteamCMD auth cache..."
+
+    local tmp_tar
+    tmp_tar="$(mktemp)"
+
+    if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -salt \
+            -in "$cache_file" \
+            -out "$tmp_tar" \
+            -pass env:STEAM_CACHE_KEY 2>/dev/null; then
+        # Extract from the filesystem root since stored paths are absolute.
+        if tar -xf "$tmp_tar" -C / 2>/dev/null; then
+            rm -f "$tmp_tar"
+            log_success "SteamCMD auth cache restored"
+            return 0
+        fi
+    fi
+
+    rm -f "$tmp_tar"
+    log_warn "Could not decrypt SteamCMD auth cache (wrong STEAM_CACHE_KEY or corrupt file)"
+    log_warn "Removing cache; a fresh Steam Guard code will be required"
+    rm -f "$cache_file"
+    return 1
+}
+
+steam_cache_save() {
+    if [[ "${STEAM_USER:-anonymous}" == "anonymous" ]]; then
+        return 0
+    fi
+
+    # Collect paths that actually exist (config dirs + any ssfn* files).
+    local existing=()
+    local p
+    for p in "${STEAM_CACHE_SOURCES[@]}"; do
+        if [[ -d "$p" ]]; then
+            existing+=("${p#/}")
+        elif [[ "$p" == */ssfn ]]; then
+            # ssfn entries are a prefix — expand to matching files.
+            local dir="${p%/ssfn}"
+            local f
+            for f in "$dir"/ssfn*; do
+                [[ -f "$f" ]] && existing+=("${f#/}")
+            done
+        fi
+    done
+
+    if [[ ${#existing[@]} -eq 0 ]]; then
+        log_debug "No SteamCMD auth state to cache yet"
+        return 0
+    fi
+
+    export STEAM_CACHE_KEY="${STEAM_CACHE_KEY:-changeme}"
+
+    local cache_file
+    cache_file="$(steam_cache_path)"
+    local cache_dir
+    cache_dir="$(dirname "$cache_file")"
+
+    mkdir -p "$cache_dir"
+    chmod 0700 "$cache_dir"
+
+    log_info "Saving SteamCMD auth cache..."
+
+    local tmp_out="${cache_file}.tmp"
+    if tar -cf - -C / "${existing[@]}" 2>/dev/null \
+            | openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
+                          -pass env:STEAM_CACHE_KEY \
+                          -out "$tmp_out" 2>/dev/null; then
+        mv "$tmp_out" "$cache_file"
+        chmod 0600 "$cache_file"
+        log_success "SteamCMD auth cache saved"
+        return 0
+    fi
+
+    rm -f "$tmp_out"
+    log_warn "Failed to save SteamCMD auth cache"
+    return 1
 }
 
 #######################################
@@ -503,3 +591,4 @@ export -f init_wine_prefix
 export -f start_xvfb stop_xvfb
 export -f create_backup rcon_send rcon_save rcon_shutdown
 export -f rotate_logs check_server_process check_game_server
+export -f steam_cache_path steam_cache_restore steam_cache_save

@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     file \
     cron \
+    # openssl: required for SteamCMD auth cache encryption (functions.sh)
+    openssl \
     # Xvfb for Unity games requiring display
     xvfb \
     xauth \

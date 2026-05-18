@@ -38,13 +38,32 @@ handle_steam_mode() {
 
     log_info "Downloading/Updating App ID $app_id..."
 
+    # Restore any previously cached SteamCMD auth (sentry file + login token)
+    # so users with 2FA don't need a fresh Steam Guard code on every restart.
+    steam_cache_restore || true
+
+    # Build the +login args. For non-anonymous accounts we pass password and
+    # (if provided) Steam Guard code as additional positional args to +login;
+    # otherwise SteamCMD prompts interactively, gets nothing, and fails with
+    # "Invalid Password".
+    local login_args=()
+    local steam_user="${STEAM_USER:-anonymous}"
+    if [[ "$steam_user" == "anonymous" ]]; then
+        login_args=(+login anonymous)
+    else
+        login_args=(+login "$steam_user" "${STEAM_PASSWORD:-}")
+        if [[ -n "${STEAM_GUARD_CODE:-}" ]]; then
+            login_args+=("${STEAM_GUARD_CODE}")
+        fi
+    fi
+
     # Add beta branch if specified
     if [[ -n "$beta_branch" ]]; then
         log_info "Using beta branch: $beta_branch"
         /steamcmd/steamcmd.sh \
             +@sSteamCmdForcePlatformType windows \
             +force_install_dir "${install_dir}" \
-            +login "${STEAM_USER:-anonymous}" \
+            "${login_args[@]}" \
             +app_set_beta "$app_id" "$beta_branch" \
             +app_update "$app_id" ${validate_flag} \
             +quit
@@ -52,7 +71,7 @@ handle_steam_mode() {
         /steamcmd/steamcmd.sh \
             +@sSteamCmdForcePlatformType windows \
             +force_install_dir "${install_dir}" \
-            +login "${STEAM_USER:-anonymous}" \
+            "${login_args[@]}" \
             +app_update "$app_id" ${validate_flag} \
             +quit
     fi
@@ -63,6 +82,10 @@ handle_steam_mode() {
         log_info "Search for executable with: find ${install_dir} -name '*.exe'"
         exit 1
     fi
+
+    # Persist the newly-written sentry file + login token so the next start
+    # can skip the Steam Guard prompt.
+    steam_cache_save || true
 
     log_success "Game files ready via SteamCMD"
 }
