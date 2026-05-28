@@ -38,48 +38,69 @@ handle_steam_mode() {
 
     log_info "Downloading/Updating App ID $app_id..."
 
-    # Restore any previously cached SteamCMD auth (sentry file + login token)
-    # so users with 2FA don't need a fresh Steam Guard code on every restart.
-    steam_cache_restore || true
-
-    # Build the +login args. For non-anonymous accounts we pass password and
-    # (if provided) Steam Guard code as additional positional args to +login;
-    # otherwise SteamCMD prompts interactively, gets nothing, and fails with
-    # "Invalid Password".
-    local login_args=()
     local steam_user="${STEAM_USER:-anonymous}"
-    if [[ "$steam_user" == "anonymous" ]]; then
-        login_args=(+login anonymous)
-    else
-        login_args=(+login "$steam_user" "${STEAM_PASSWORD:-}")
-        if [[ -n "${STEAM_GUARD_CODE:-}" ]]; then
-            login_args+=("${STEAM_GUARD_CODE}")
-        fi
-    fi
 
-    # Add beta branch if specified
+    # Command pieces shared by every login mode. The +login args are appended
+    # between these two when we actually invoke SteamCMD.
+    local steam_pre=(+@sSteamCmdForcePlatformType windows +force_install_dir "${install_dir}")
+    local steam_post=()
     if [[ -n "$beta_branch" ]]; then
         log_info "Using beta branch: $beta_branch"
-        /steamcmd/steamcmd.sh \
-            +@sSteamCmdForcePlatformType windows \
-            +force_install_dir "${install_dir}" \
-            "${login_args[@]}" \
-            +app_set_beta "$app_id" "$beta_branch" \
-            +app_update "$app_id" ${validate_flag} \
-            +quit
+        steam_post=(+app_set_beta "$app_id" "$beta_branch" +app_update "$app_id" ${validate_flag} +quit)
     else
-        /steamcmd/steamcmd.sh \
-            +@sSteamCmdForcePlatformType windows \
-            +force_install_dir "${install_dir}" \
-            "${login_args[@]}" \
-            +app_update "$app_id" ${validate_flag} \
-            +quit
+        steam_post=(+app_update "$app_id" ${validate_flag} +quit)
     fi
 
-    # Persist the newly-written sentry file + login token so the next start
-    # can skip the Steam Guard prompt. Done BEFORE the executable check so a
-    # failed install check doesn't waste the user's Steam Guard backup code.
+    # Run SteamCMD with the given +login args. Streams output live (tee) and
+    # reports success based on the app actually updating — SteamCMD's exit code
+    # is unreliable, so a silent auth failure must not look like success.
+    # stdin from /dev/null so a credential prompt fails fast instead of hanging.
+    run_steam_update() {
+        local logf; logf="$(mktemp)"
+        /steamcmd/steamcmd.sh "${steam_pre[@]}" "$@" "${steam_post[@]}" < /dev/null 2>&1 | tee "$logf"
+        local ok=1
+        grep -qE "Success! App|already up to date|fully installed" "$logf" && ok=0
+        rm -f "$logf"
+        return $ok
+    }
+
+    local updated=false
+    if [[ "$steam_user" == "anonymous" ]]; then
+        run_steam_update +login anonymous && updated=true
+    elif steam_cache_restore; then
+        # Cache restored: log in with username ONLY so SteamCMD reuses the stored
+        # session. Passing the password here would force a full re-auth and
+        # consume a Steam Guard code on every start — the bug this avoids.
+        log_info "Using cached Steam session for '${steam_user}' — no password or Steam Guard code needed"
+        if run_steam_update +login "$steam_user"; then
+            updated=true
+        else
+            log_warn "Cached Steam session was rejected (likely expired) — retrying with full credentials"
+            local login_args=(+login "$steam_user" "${STEAM_PASSWORD:-}")
+            [[ -n "${STEAM_GUARD_CODE:-}" ]] && login_args+=("${STEAM_GUARD_CODE}")
+            run_steam_update "${login_args[@]}" && updated=true
+        fi
+    else
+        # No usable cache: full credential login. The Steam Guard code (if 2FA is
+        # enabled) is needed once here to prime the cache for future starts.
+        local login_args=(+login "$steam_user" "${STEAM_PASSWORD:-}")
+        [[ -n "${STEAM_GUARD_CODE:-}" ]] && login_args+=("${STEAM_GUARD_CODE}")
+        run_steam_update "${login_args[@]}" && updated=true
+    fi
+
+    # Persist the (possibly newly-written) Steam session so the next start can
+    # skip the password + Guard code. Done BEFORE the executable check so a
+    # failed install verification doesn't waste the user's Steam Guard code.
     steam_cache_save || true
+
+    # Auth-specific guidance if SteamCMD didn't report a successful update. Not a
+    # hard failure on its own — the file verification below is the final arbiter,
+    # so an unusual-but-valid success message can't cause a false abort here.
+    if [[ "$updated" != "true" ]]; then
+        log_warn "SteamCMD did not report a successful update for App ID $app_id"
+        log_warn "First run: set STEAM_USER, STEAM_PASSWORD and a CURRENT STEAM_GUARD_CODE (if 2FA is on)."
+        log_warn "Changed STEAM_CACHE_KEY recently? That invalidates the cache — supply a fresh STEAM_GUARD_CODE once to re-prime."
+    fi
 
     # Verify the right files for this preset actually landed in install_dir.
     # Nitrox is a special case: GAME_EXECUTABLE (Nitrox.Server.Subnautica) is

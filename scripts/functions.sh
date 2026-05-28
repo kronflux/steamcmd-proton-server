@@ -451,18 +451,21 @@ steam_cache_path() {
     echo "${DATA_DIR}/.steamcmd/cache.tar.enc"
 }
 
+# Returns 0 only when a usable cache was actually restored, so the caller can
+# decide whether to log in with the cached session (username only) or fall back
+# to a full credential login. Non-zero means "no cache available, log in fully".
 steam_cache_restore() {
-    # Anonymous login has no auth state — nothing to cache.
+    # Anonymous login has no auth state — nothing to restore.
     if [[ "${STEAM_USER:-anonymous}" == "anonymous" ]]; then
-        return 0
+        return 1
     fi
 
     local cache_file
     cache_file="$(steam_cache_path)"
 
     if [[ ! -f "$cache_file" ]]; then
-        log_info "No SteamCMD auth cache found — fresh login required"
-        return 0
+        log_info "No SteamCMD auth cache found — credential login required"
+        return 1
     fi
 
     export STEAM_CACHE_KEY="${STEAM_CACHE_KEY:-changeme}"
