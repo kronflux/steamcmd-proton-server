@@ -5,6 +5,13 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# When invoked by cron the container's environment isn't present. start.sh
+# snapshots it here so scheduled backups see DATA_DIR, BACKUP_DIR, the Wine
+# prefix path, etc. The `|| true` keeps a missing/odd snapshot from aborting
+# the run; create_backup also defaults these paths, so backups work regardless.
+[[ -f /var/run/container.env ]] && source /var/run/container.env 2>/dev/null || true
+
 source "${SCRIPT_DIR}/functions.sh"
 
 # Backup settings
@@ -37,10 +44,10 @@ if create_backup; then
 
     # List current backups
     log_info "Current backups:"
-    ls -lh "$BACKUP_DIR" | grep "backup_" | tail -5
+    ls -lh "$BACKUP_DIR" 2>/dev/null | grep "backup_" | tail -5 || log_info "  (none yet)"
 
-    # Calculate total backup size
-    local total_size=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)
+    # Calculate total backup size (no 'local' — this runs in script scope, not a function)
+    total_size=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)
     log_info "Total backup size: $total_size"
 else
     log_error "Backup failed!"

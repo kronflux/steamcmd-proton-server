@@ -247,7 +247,10 @@ rotate_logs() {
 #######################################
 
 create_backup() {
-    local backup_dir="${BACKUP_DIR:-/data/backups}"
+    # DATA_DIR/BACKUP_DIR default to the standard layout so this still works
+    # when invoked from cron (which doesn't inherit the container's environment).
+    local data_dir="${DATA_DIR:-/data}"
+    local backup_dir="${BACKUP_DIR:-${data_dir}/backups}"
     local retention="${BACKUP_RETENTION:-7}"
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_name="backup_${timestamp}"
@@ -256,24 +259,32 @@ create_backup() {
 
     log_info "Creating backup: $backup_name"
 
-    # Create temporary directory for this backup
+    # Stage the backup in a temp dir. We capture persistent state only — saves and
+    # configs under /data — not the re-downloadable game install (Subnautica alone
+    # is multiple GB and SteamCMD can re-fetch it). The Wine prefix is included for
+    # Proton games since some store their saves inside it.
     local temp_backup="${backup_dir}/temp_${timestamp}"
     mkdir -p "$temp_backup"
 
-    # Backup game data
-    if [[ -d "${GAME_DIR}" ]]; then
-        log_info "Backing up game files..."
-        # Use rsync for efficient copying if available
-        if command -v rsync &> /dev/null; then
-            rsync -a --exclude='*.tmp' --exclude='*.log' --exclude='cache' \
-                "${GAME_DIR}/" "${temp_backup}/game/" 2>/dev/null || true
-        else
-            cp -r "${GAME_DIR}" "${temp_backup}/game" 2>/dev/null || true
+    local copied=0
+    local entry dest src
+    for entry in "saves:${data_dir}/saves" "config:${data_dir}/config" "savefiles:${data_dir}/savefiles"; do
+        dest="${entry%%:*}"
+        src="${entry#*:}"
+        if [[ -d "$src" ]] && [[ -n "$(ls -A "$src" 2>/dev/null)" ]]; then
+            log_info "Backing up ${dest}..."
+            if command -v rsync &> /dev/null; then
+                rsync -a --exclude='*.tmp' "${src}/" "${temp_backup}/${dest}/" 2>/dev/null || true
+            else
+                cp -r "$src" "${temp_backup}/${dest}" 2>/dev/null || true
+            fi
+            copied=1
         fi
-    fi
+    done
 
-    # Backup Wine prefix
-    if [[ -n "${STEAM_COMPAT_DATA_PATH}" && -d "${STEAM_COMPAT_DATA_PATH}" ]]; then
+    # Wine prefix (Proton games keep save/config state inside it). Only available
+    # when STEAM_COMPAT_DATA_PATH is set — i.e. not in the bare cron environment.
+    if [[ -n "${STEAM_COMPAT_DATA_PATH:-}" && -d "${STEAM_COMPAT_DATA_PATH}" ]]; then
         log_info "Backing up Wine prefix..."
         if command -v rsync &> /dev/null; then
             rsync -a --exclude='*.tmp' --exclude='temp' \
@@ -281,20 +292,24 @@ create_backup() {
         else
             cp -r "${STEAM_COMPAT_DATA_PATH}" "${temp_backup}/wine" 2>/dev/null || true
         fi
+        copied=1
     fi
 
-    # Create compressed archive
+    # Never write a useless empty archive — the old failure mode where a cron run
+    # found no env vars, copied nothing, and still produced a tarball of just ".".
+    if [[ "$copied" -eq 0 ]] || [[ -z "$(ls -A "$temp_backup" 2>/dev/null)" ]]; then
+        rm -rf "$temp_backup"
+        log_warn "Nothing to back up under ${data_dir} (no saves/config/wine data) — skipping archive"
+        return 0
+    fi
+
     log_info "Compressing backup..."
     tar -czf "${backup_dir}/${backup_name}.tar.gz" -C "$temp_backup" . 2>/dev/null || true
 
-    # Cleanup temp directory
     rm -rf "$temp_backup"
 
-    # Verify backup was created
     if [[ -f "${backup_dir}/${backup_name}.tar.gz" ]]; then
         log_success "Backup created: ${backup_name}.tar.gz"
-
-        # Calculate backup size
         local size=$(stat -f%z "${backup_dir}/${backup_name}.tar.gz" 2>/dev/null || stat -c%s "${backup_dir}/${backup_name}.tar.gz" 2>/dev/null || echo 0)
         log_info "Backup size: $(numfmt --to=iec $size 2>/dev/null || echo $size bytes)"
     else
@@ -302,8 +317,7 @@ create_backup() {
         return 1
     fi
 
-    # Clean old backups
-    log_info "Cleaning old backups (keeping $retention)..."
+    log_info "Cleaning old backups (keeping ${retention} days)..."
     find "$backup_dir" -name "backup_*.tar.gz" -type f -mtime +$retention -delete 2>/dev/null || true
 
     return 0

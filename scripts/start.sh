@@ -9,6 +9,11 @@ source "${SCRIPT_DIR}/functions.sh"
 
 # Start cron daemon for automated backups
 if command -v cron &> /dev/null; then
+    # Cron jobs run with a bare environment and don't see the container's ENV
+    # (GAME_CONFIG, DATA_DIR, BACKUP_DIR, ...). Snapshot the current environment
+    # so backup.sh can source it; without this, scheduled backups archive nothing.
+    mkdir -p /var/run
+    export -p > /var/run/container.env 2>/dev/null || true
     cron 2>/dev/null || true
     log_info "Cron daemon started for automated backups"
 fi
