@@ -563,49 +563,57 @@ generate_nitrox_config() {
     log_info "  Save Name: ${nitrox_save_name}"
     log_info "  Save Dir: ${nitrox_save_dir}"
 
-    # Check if already initialized
-    if [[ -f "${data_path}/.nitrox_initialized" ]]; then
-        log_info "Nitrox already initialized, skipping setup"
-        return 0
-    fi
-
-    # Download Nitrox from GitHub
-    # .NET 9 runtime is installed in the image (see Dockerfile) — no runtime install here.
-    log_info "Downloading Nitrox..."
-    mkdir -p "${nitrox_path}"
-
-    local nitrox_url
-    nitrox_url=$(curl -s https://api.github.com/repos/SubnauticaNitrox/Nitrox/releases/latest \
-        | grep -o 'https://.*linux_x64\.zip' | head -n 1)
-
-    if [[ -z "$nitrox_url" ]]; then
-        log_error "Could not fetch Nitrox download URL"
-        return 1
-    fi
-
-    log_info "Nitrox URL: $nitrox_url"
-
-    local tmpfile="/tmp/$(basename "$nitrox_url")"
-    curl -L "$nitrox_url" -o "$tmpfile"
-
-    log_info "Extracting Nitrox..."
-    # Nitrox releases now place all files at the zip root (older versions used
-    # a linux-x64/ subdirectory). Extract directly into nitrox_path.
-    unzip -qo "$tmpfile" -d "${nitrox_path}"
-    rm -f "$tmpfile"
-
+    # ---- One-time: download + extract the Nitrox server binary ----
+    # The binary lives under ${GAME_DIR}/Nitrox, which IS persisted in /data, so
+    # we gate the (slow) download on the binary actually being present rather than
+    # on a flag file. Everything AFTER this block must run on every start.
     if [[ ! -f "${nitrox_path}/Nitrox.Server.Subnautica" ]]; then
-        log_error "Nitrox.Server.Subnautica not found in ${nitrox_path} after extraction"
-        log_info "Archive layout may have changed again. Contents:"
-        ls -la "${nitrox_path}" >&2
-        return 1
+        # .NET 9 runtime is installed in the image (see Dockerfile) — no runtime install here.
+        log_info "Downloading Nitrox..."
+        mkdir -p "${nitrox_path}"
+
+        local nitrox_url
+        nitrox_url=$(curl -s https://api.github.com/repos/SubnauticaNitrox/Nitrox/releases/latest \
+            | grep -o 'https://.*linux_x64\.zip' | head -n 1)
+
+        if [[ -z "$nitrox_url" ]]; then
+            log_error "Could not fetch Nitrox download URL"
+            return 1
+        fi
+
+        log_info "Nitrox URL: $nitrox_url"
+
+        local tmpfile="/tmp/$(basename "$nitrox_url")"
+        curl -L "$nitrox_url" -o "$tmpfile"
+
+        log_info "Extracting Nitrox..."
+        # Nitrox releases now place all files at the zip root (older versions used
+        # a linux-x64/ subdirectory). Extract directly into nitrox_path.
+        unzip -qo "$tmpfile" -d "${nitrox_path}"
+        rm -f "$tmpfile"
+
+        if [[ ! -f "${nitrox_path}/Nitrox.Server.Subnautica" ]]; then
+            log_error "Nitrox.Server.Subnautica not found in ${nitrox_path} after extraction"
+            log_info "Archive layout may have changed again. Contents:"
+            ls -la "${nitrox_path}" >&2
+            return 1
+        fi
+
+        chmod +x "${nitrox_path}/Nitrox.Server.Subnautica"
+        log_success "Nitrox extracted to: ${nitrox_path}"
+    else
+        log_info "Nitrox binary already present — skipping download"
     fi
 
-    chmod +x "${nitrox_path}/Nitrox.Server.Subnautica"
-    log_success "Nitrox extracted to: ${nitrox_path}"
-
-    # Create Nitrox config
-    log_info "Configuring Nitrox..."
+    # ---- Every start: (re)build Nitrox config + save routing ----
+    # nitrox.cfg and the saves/logs symlinks live under /root/.config/Nitrox,
+    # which is NOT in the /data volume. When the container is recreated (Unraid
+    # image update / template apply), /root is wiped while /data survives. If this
+    # wiring only ran once, Nitrox would lose the route to /data/saves and quietly
+    # start a brand-new world in an ephemeral location — overwriting nothing in
+    # /data but abandoning the real save. Rebuilding it every start keeps the save
+    # anchored in /data regardless of container churn.
+    log_info "Wiring Nitrox config and save directories..."
     mkdir -p "${nitrox_config_dir}"
 
     cat > "${nitrox_config_dir}/nitrox.cfg" << EOF
@@ -614,14 +622,11 @@ generate_nitrox_config() {
   "IsMultipleGameInstancesAllowed": true
 }
 EOF
-    log_success "Created nitrox.cfg"
 
-    # Create saves directory structure
-    mkdir -p "${saves_dir}"
-    mkdir -p "${nitrox_save_dir}"
-    mkdir -p "${log_dir}"
+    # Persistent save/log directories live in /data.
+    mkdir -p "${saves_dir}" "${nitrox_save_dir}" "${log_dir}"
 
-    # Create default server.cfg
+    # Create default server.cfg only when absent — never clobber user edits.
     if [[ ! -f "${nitrox_save_dir}/server.cfg" ]]; then
         cat > "${nitrox_save_dir}/server.cfg" << 'EOF'
 # Nitrox Server Configuration
@@ -669,23 +674,39 @@ EOF
         log_success "Created server.cfg"
     fi
 
-    # Create symlinks
-    rm -rf "${nitrox_config_dir}/saves" "${nitrox_config_dir}/logs" 2>/dev/null || true
+    # ---- saves symlink: ${nitrox_config_dir}/saves → /data/saves ----
+    # If a previous start (running the old, broken setup) let Nitrox create a REAL
+    # directory here, its contents are an ephemeral world that would be destroyed by
+    # the relink. Stash a copy into /data first so no progress is silently lost.
+    if [[ -d "${nitrox_config_dir}/saves" && ! -L "${nitrox_config_dir}/saves" ]]; then
+        if [[ -n "$(ls -A "${nitrox_config_dir}/saves" 2>/dev/null)" ]]; then
+            local stash="${saves_dir}/.recovered_$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "${stash}"
+            cp -a "${nitrox_config_dir}/saves/." "${stash}/" 2>/dev/null || true
+            log_warn "Found a non-symlinked saves dir at ${nitrox_config_dir}/saves"
+            log_warn "Copied its contents to ${stash}/ before relinking — recover manually if needed"
+        fi
+        rm -rf "${nitrox_config_dir}/saves"
+    fi
+    [[ -L "${nitrox_config_dir}/saves" ]] && rm -f "${nitrox_config_dir}/saves"
     ln -s "${saves_dir}" "${nitrox_config_dir}/saves"
-    ln -s "${log_dir}" "${nitrox_config_dir}/logs"
-    mkdir -p "${nitrox_config_dir}/cache"
 
-    log_success "Nitrox directory structure configured"
+    # ---- logs symlink: ${nitrox_config_dir}/logs → /data/logs ----
+    # Logs are disposable; clear whatever is there and relink.
+    rm -rf "${nitrox_config_dir}/logs" 2>/dev/null || true
+    ln -s "${log_dir}" "${nitrox_config_dir}/logs"
+
+    mkdir -p "${nitrox_config_dir}/cache"
 
     # Set environment for Nitrox
     export SUBNAUTICA_INSTALLATION_PATH="${subnautica_path}"
 
-    # Mark as initialized
+    # Diagnostic markers only — the wiring above no longer gates on these.
     touch "${data_path}/.nitrox_initialized"
     echo "nitrox" > "${data_path}/.mod_type"
 
     log_success "========================================="
-    log_info "Nitrox setup completed successfully!"
+    log_info "Nitrox ready"
     log_info "Save directory: ${nitrox_save_dir}"
     log_info "Config: ${nitrox_save_dir}/server.cfg"
     log_info "========================================="
