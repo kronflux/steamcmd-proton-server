@@ -247,7 +247,7 @@ generate_valheim_config() {
     local config_dir="${DATA_DIR}/config"
     local save_dir="${DATA_DIR}/savefiles"
 
-    mkdir -p "$save_dir"
+    mkdir -p "$config_dir" "$save_dir"
 
     cat > "${config_dir}/adminlist.txt" << EOF
 # Admin list - one SteamID per line
@@ -275,6 +275,7 @@ generate_subnautica_config() {
     log_info "Generating Subnautica configuration..."
 
     local config_dir="${DATA_DIR}/config"
+    mkdir -p "$config_dir"
 
     cat > "${config_dir}/serverconfig.ini" << EOF
 [Subnautica]
@@ -294,6 +295,7 @@ generate_dayz_config() {
 
     local config_dir="${DATA_DIR}/config"
     local server_cfg="${config_dir}/server.cfg"
+    mkdir -p "$config_dir"
 
     cat > "$server_cfg" << EOF
 // DayZ Server Configuration
@@ -407,6 +409,7 @@ generate_generic_config() {
     log_info "Generating generic server configuration..."
 
     local config_dir="${DATA_DIR}/config"
+    mkdir -p "$config_dir"
 
     # Create basic server.properties template
     cat > "${config_dir}/server.properties" << EOF
@@ -718,8 +721,9 @@ EOF
 
 log_info "[03] Generating server configuration..."
 
-# Create config directory
-mkdir -p "${DATA_DIR}/config"
+# Note: ${DATA_DIR}/config is created by the individual config generators that
+# actually use it. Presets that store config elsewhere (e.g. Nitrox, which uses
+# ${DATA_DIR}/saves/<name>/server.cfg) no longer get a stray empty config dir.
 
 # Check for game-specific config generator
 preset="${GAME_CONFIG:-}"
