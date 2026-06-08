@@ -42,7 +42,15 @@ handle_steam_mode() {
 
     # Command pieces shared by every login mode. The +login args are appended
     # between these two when we actually invoke SteamCMD.
-    local steam_pre=(+@sSteamCmdForcePlatformType windows +force_install_dir "${install_dir}")
+    # Force the Windows depot for Proton games. Native-Linux games (Vein) set
+    # USE_LINUX_DEPOT=true to skip the flag and pull SteamCMD's native Linux depot.
+    # NOTE: never use the var name STEAM_PLATFORM — steamcmd.sh reads it to locate
+    # its own binary (/steamcmd/$STEAM_PLATFORM/steamcmd) and would fail to start.
+    local steam_pre=()
+    if [[ "${USE_LINUX_DEPOT:-false}" != "true" ]]; then
+        steam_pre+=(+@sSteamCmdForcePlatformType windows)
+    fi
+    steam_pre+=(+force_install_dir "${install_dir}")
     local steam_post=()
     if [[ -n "$beta_branch" ]]; then
         log_info "Using beta branch: $beta_branch"

@@ -1,0 +1,49 @@
+# Vein Dedicated Server
+
+services:
+  vein:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: vein
+    restart: unless-stopped
+
+    environment:
+      # Core (preset sets STEAM_APP_ID, GAME_EXECUTABLE, USE_LINUX_DEPOT=true — native, no Proton)
+      - GAME_CONFIG=vein
+
+      # Server Identity
+      - SERVER_NAME=Vein Server
+      - SERVER_PASSWORD=                 # Leave empty for public server
+      - MAX_PLAYERS=16
+
+      # Listing / admins
+      - VEIN_PUBLIC=true                  # Show in the in-game server browser
+      # - VEIN_SUPER_ADMIN_IDS=7656119...   # Comma-separated SteamID64 values
+      # - VEIN_ADMIN_IDS=7656119...
+
+      # Ports (must match port mappings below)
+      - GAME_PORT=7777
+      - QUERY_PORT=27015
+
+      # Steam
+      - STEAM_USER=anonymous
+      - STEAM_VALIDATE=false
+
+      # Backup
+      - BACKUP_RETENTION=7
+
+    ports:
+      - "7777:7777/udp"                  # Game client port
+      - "27015:27015/udp"                # Steam server-browser query port
+      # - "7777:7777/tcp"                # RCON (optional, only if RCON_ENABLED=true)
+
+    volumes:
+      - ./data:/data
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 12G
+        reservations:
+          cpus: '2'
+          memory: 8G

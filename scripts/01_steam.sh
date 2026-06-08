@@ -21,15 +21,17 @@ if [[ ! -f "/steamcmd/steamcmd.sh" ]]; then
     log_success "SteamCMD reinstalled"
 fi
 
-# Update SteamCMD and prime the Windows platform app-info cache.
-# Running +@sSteamCmdForcePlatformType windows here ensures the Windows depot
-# manifests are cached before 02_server.sh attempts the game download.
+# Update SteamCMD and prime the app-info cache.
+# Most games run the Windows depot via Proton, so we force the Windows platform.
+# Native-Linux games (e.g. Vein) set USE_LINUX_DEPOT=true to skip the force flag
+# and let SteamCMD use its native Linux platform. (Do NOT set STEAM_PLATFORM —
+# steamcmd.sh reads that name to find its own binary and would break.)
 log_info "Updating SteamCMD..."
-/steamcmd/steamcmd.sh \
-    +@sSteamCmdForcePlatformType windows \
-    +login anonymous \
-    +app_info_update 1 \
-    +quit 2>&1 | grep -v "Steam client" || true
+steamcmd_args=(+login anonymous +app_info_update 1 +quit)
+if [[ "${USE_LINUX_DEPOT:-false}" != "true" ]]; then
+    steamcmd_args=(+@sSteamCmdForcePlatformType windows "${steamcmd_args[@]}")
+fi
+/steamcmd/steamcmd.sh "${steamcmd_args[@]}" 2>&1 | grep -v "Steam client" || true
 
 # Create steamapps directory structure
 mkdir -p /steamapps/compatdata

@@ -53,6 +53,9 @@ main() {
         starrupture)
             check_starrupture_health
             ;;
+        vein)
+            check_vein_health
+            ;;
         valheim)
             check_valheim_health
             ;;
@@ -105,6 +108,19 @@ check_starrupture_health() {
             log_debug "Health check: Star Rupture query port responsive"
         else
             log_warn "Health check: Star Rupture query port not responding"
+        fi
+    fi
+}
+
+check_vein_health() {
+    local query_port="${QUERY_PORT:-27015}"
+
+    # Check if query port is listening
+    if command -v nc &> /dev/null; then
+        if nc -z -u -w 2 127.0.0.1 "$query_port" 2>/dev/null; then
+            log_debug "Health check: Vein query port responsive"
+        else
+            log_warn "Health check: Vein query port not responding"
         fi
     fi
 }
