@@ -90,22 +90,39 @@ setup_display_environment() {
 
 # Install Windows runtime libraries into the Proton/Wine prefix for games that
 # need them. Opt-in per preset via WINETRICKS_VERBS (space-separated winetricks
-# verbs). Runs once per prefix (tracked by a marker), so restarts are fast.
+# verbs). Runs when the verb list changes (sha256 marker); WINETRICKS_FORCE=true
+# forces a re-run.
 provision_wine_deps() {
     [[ -z "${WINETRICKS_VERBS:-}" ]] && return 0
 
-    local marker="${STEAM_COMPAT_DATA_PATH}/.winetricks_done"
-    if [[ -f "$marker" ]]; then
+    local marker="${STEAM_COMPAT_DATA_PATH}/.winetricks_verbs.sha256"
+    local legacy_marker="${STEAM_COMPAT_DATA_PATH}/.winetricks_done"
+    local want_hash
+    want_hash="$(printf '%s' "${WINETRICKS_VERBS}" | sha256sum | cut -d' ' -f1)"
+
+    if [[ "${WINETRICKS_FORCE:-false}" == "true" ]]; then
+        log_info "WINETRICKS_FORCE=true — re-provisioning Wine deps"
+    elif [[ -f "$marker" && "$(cat "$marker" 2>/dev/null)" == "$want_hash" ]]; then
         log_info "Wine runtime deps already provisioned (${WINETRICKS_VERBS})"
         return 0
+    elif [[ -f "$legacy_marker" && ! -f "$marker" ]]; then
+        # Prefix provisioned before hash markers existed: adopt the current verb
+        # list as the recorded state instead of forcing a slow re-provision.
+        printf '%s' "$want_hash" > "$marker"
+        rm -f "$legacy_marker"
+        log_info "Adopted legacy winetricks marker (verbs: ${WINETRICKS_VERBS})"
+        return 0
+    elif [[ -f "$marker" ]]; then
+        log_info "WINETRICKS_VERBS changed — re-provisioning (${WINETRICKS_VERBS})"
     fi
+
     if ! command -v winetricks >/dev/null 2>&1; then
         log_warn "winetricks not installed — cannot provision Wine deps: ${WINETRICKS_VERBS}"
         return 0
     fi
 
     log_info "Provisioning Wine runtime deps via winetricks: ${WINETRICKS_VERBS}"
-    log_info "(first run for this prefix only — this can take several minutes)"
+    log_info "(this can take several minutes)"
 
     # Install into the same prefix the game runs in. mscoree/mshtml=d skips the
     # Mono/Gecko install prompts. Word-splitting of the verb list is intentional.
@@ -114,7 +131,8 @@ provision_wine_deps() {
     if WINE="$wine_bin" WINEPREFIX="${STEAM_COMPAT_DATA_PATH}/pfx" \
        WINEDLLOVERRIDES="mscoree=d;mshtml=d" WINEDEBUG="-all" \
        winetricks -q -f ${WINETRICKS_VERBS} >> "$log_file" 2>&1; then
-        touch "$marker"
+        printf '%s' "$want_hash" > "$marker"
+        rm -f "$legacy_marker"
         log_success "Wine runtime deps installed"
     else
         log_warn "winetricks reported errors — the server may still fail if deps are missing"

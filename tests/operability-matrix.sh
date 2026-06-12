@@ -55,5 +55,35 @@ check "doctor: runs to completion off-container" '[[ "$dout" == *"RESULT:"* ]]'
 check "doctor: module provenance reported" '[[ "$dout" == *"scripts/games/vein/preset.conf"* ]]'
 check "doctor: exit code reflects severity (1 or 2 in degraded env)" '[[ $drc -eq 1 || $drc -eq 2 ]]'
 
+############################
+# Section 3: winetricks verb-hash marker
+############################
+# Drive provision_wine_deps (extracted from start.sh) with a stubbed winetricks.
+eval "$(sed -n '/^provision_wine_deps()/,/^}/p' "${REPO_ROOT}/scripts/start.sh")"
+WT="$T/wtbin"; mkdir -p "$WT"
+printf '#!/bin/bash\necho RAN-WINETRICKS "$@" >> "%s/wt.log"\nexit 0\n' "$T" > "$WT/winetricks"
+printf '#!/bin/bash\nexit 0\n' > "$WT/wine64"
+chmod +x "$WT/winetricks" "$WT/wine64"
+PFX="$T/prefix"; mkdir -p "$PFX/pfx"
+log_file="$T/wt-run.log"; touch "$log_file"
+
+wt_runs() { grep -c RAN-WINETRICKS "$T/wt.log" 2>/dev/null || echo 0; }
+
+STEAM_COMPAT_DATA_PATH="$PFX" WINETRICKS_VERBS="vcrun2017 d3dcompiler_47" PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
+check "marker: first run provisions + writes hash" '[[ "$(wt_runs)" == "1" && -f "$PFX/.winetricks_verbs.sha256" ]]'
+
+STEAM_COMPAT_DATA_PATH="$PFX" WINETRICKS_VERBS="vcrun2017 d3dcompiler_47" PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
+check "marker: unchanged verbs skip" '[[ "$(wt_runs)" == "1" ]]'
+
+STEAM_COMPAT_DATA_PATH="$PFX" WINETRICKS_VERBS="vcrun2017 d3dcompiler_47 crypt32" PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
+check "marker: changed verbs re-provision" '[[ "$(wt_runs)" == "2" ]]'
+
+STEAM_COMPAT_DATA_PATH="$PFX" WINETRICKS_VERBS="vcrun2017 d3dcompiler_47 crypt32" WINETRICKS_FORCE=true PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
+check "marker: WINETRICKS_FORCE always provisions" '[[ "$(wt_runs)" == "3" ]]'
+
+PFX2="$T/prefix2"; mkdir -p "$PFX2/pfx"; touch "$PFX2/.winetricks_done"
+STEAM_COMPAT_DATA_PATH="$PFX2" WINETRICKS_VERBS="vcrun2017" PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
+check "marker: legacy boolean adopted without re-run" '[[ "$(wt_runs)" == "3" && -f "$PFX2/.winetricks_verbs.sha256" && ! -f "$PFX2/.winetricks_done" ]]'
+
 echo "OPERABILITY $( [[ $fail -eq 0 ]] && echo PASS || echo FAIL ) (${pass}/${total})"
 [[ $fail -eq 0 ]]
