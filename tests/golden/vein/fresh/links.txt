@@ -1,0 +1,2 @@
+@GAME@/Vein/Saved/Config/LinuxServer/Game.ini -> @DATA@/config/Game.ini
+@GAME@/Vein/Saved/SaveGames -> @DATA@/saves

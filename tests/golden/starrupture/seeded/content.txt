@@ -1,0 +1,5 @@
+=== @DATA@/config/DSSettings.txt ===
+{"SessionName":"Seeded"}
+
+=== @DATA@/saves/auto.sav ===
+seed

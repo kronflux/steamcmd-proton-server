@@ -1,0 +1,13 @@
+=== @DATA@/config/Game.ini ===
+[/Script/Engine.GameSession]
+MaxPlayers=16
+
+[/Script/Vein.VeinGameSession]
+bPublic=True
+ServerName=Vein Server
+BindAddr=0.0.0.0
+HeartbeatInterval=5.0
+
+[OnlineSubsystemSteam]
+GameServerQueryPort=27015
+

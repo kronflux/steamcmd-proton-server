@@ -1,0 +1,54 @@
+=== @DATA@/.mod_type ===
+nitrox
+
+=== @DATA@/.nitrox_initialized ===
+
+=== @DATA@/saves/MyServer/server.cfg ===
+# Nitrox Server Configuration
+# Port settings
+ServerPort=11000
+
+# Player settings
+MaxConnections=100
+ServerPassword=55555
+AdminPassword=Chickenpotpie101
+
+# Game settings
+GameMode=SURVIVAL
+Seed=
+
+# Performance
+CreateFullEntityCache=False
+SaveInterval=120000
+MaxBackups=10
+
+# Player stats defaults
+DefaultOxygenValue=45
+DefaultMaxOxygenValue=45
+DefaultHealthValue=80
+DefaultHungerValue=50.5
+DefaultThirstValue=90.5
+DefaultInfectionValue=0.1
+
+# Network
+InitialSyncTimeout=300000
+AutoPortForward=False
+LANDiscoveryEnabled=True
+
+# Features
+DisableConsole=False
+DisableAutoSave=False
+DisableAutoBackup=False
+KeepInventoryOnDeath=False
+PvPEnabled=False
+SafeBuilding=True
+
+# Permissions
+DefaultPlayerPerm=PLAYER
+
+=== @NITROXCFG@/nitrox.cfg ===
+{
+  "PreferredGamePath": "@GAME@/Subnautica",
+  "IsMultipleGameInstancesAllowed": true
+}
+

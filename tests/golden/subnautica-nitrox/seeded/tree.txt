@@ -1,0 +1,15 @@
+d @DATA@/logs
+d @DATA@/saves
+d @DATA@/saves/MyServer
+d @DATA@/saves/.recovered_@TS@
+d @DATA@/saves/.recovered_@TS@/OldWorld
+d @GAME@/Nitrox
+d @NITROXCFG@/cache
+f @DATA@/.mod_type
+f @DATA@/.nitrox_initialized
+f @DATA@/saves/MyServer/server.cfg
+f @DATA@/saves/.recovered_@TS@/OldWorld/world.dat
+f @GAME@/Nitrox/Nitrox.Server.Subnautica
+f @NITROXCFG@/nitrox.cfg
+l @NITROXCFG@/logs
+l @NITROXCFG@/saves

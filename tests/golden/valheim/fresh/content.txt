@@ -1,0 +1,9 @@
+=== @DATA@/config/adminlist.txt ===
+# Admin list - one SteamID per line
+
+=== @DATA@/config/bannedlist.txt ===
+# Banned players - one SteamID per line
+
+=== @DATA@/config/permittedlist.txt ===
+# Permitted players - one SteamID per line
+

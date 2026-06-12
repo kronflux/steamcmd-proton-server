@@ -1,0 +1,9 @@
+d @DATA@/config
+d @DATA@/saves
+d @GAME@/SCUM
+d @GAME@/SCUM/Saved
+d @GAME@/SCUM/Saved/Config
+f @DATA@/config/ServerSettings.ini
+f @DATA@/saves/SCUM.db
+l @GAME@/SCUM/Saved/Config/WindowsServer
+l @GAME@/SCUM/Saved/SaveFiles

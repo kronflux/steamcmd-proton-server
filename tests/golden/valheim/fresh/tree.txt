@@ -1,0 +1,5 @@
+d @DATA@/config
+d @DATA@/savefiles
+f @DATA@/config/adminlist.txt
+f @DATA@/config/bannedlist.txt
+f @DATA@/config/permittedlist.txt

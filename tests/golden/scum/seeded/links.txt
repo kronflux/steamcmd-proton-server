@@ -1,0 +1,2 @@
+@GAME@/SCUM/Saved/Config/WindowsServer -> @DATA@/config
+@GAME@/SCUM/Saved/SaveFiles -> @DATA@/saves

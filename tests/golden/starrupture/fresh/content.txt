@@ -1,0 +1,9 @@
+=== @DATA@/config/DSSettings.txt ===
+{
+  "SessionName": "StarRuptureServer",
+  "SaveGameInterval": "300",
+  "StartNewGame": "false",
+  "LoadSavedGame": "true",
+  "SaveGameName": "AutoSave0.sav"
+}
+

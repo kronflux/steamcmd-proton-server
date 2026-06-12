@@ -1,0 +1,10 @@
+d @DATA@/config
+d @DATA@/saves
+d @GAME@/Vein
+d @GAME@/Vein/Saved
+d @GAME@/Vein/Saved/Config
+d @GAME@/Vein/Saved/Config/LinuxServer
+f @DATA@/config/Game.ini
+f @DATA@/saves/world.sav
+l @GAME@/Vein/Saved/Config/LinuxServer/Game.ini
+l @GAME@/Vein/Saved/SaveGames

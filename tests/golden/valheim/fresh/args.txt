@@ -1,0 +1,1 @@
+-batchmode -nographics -port 2456 -name "Valheim Server" -password "" -world "Dedicated" -public 1

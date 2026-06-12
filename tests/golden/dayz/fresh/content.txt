@@ -1,0 +1,26 @@
+=== @DATA@/config/server.cfg ===
+// DayZ Server Configuration
+
+hostname = "DayZ Server";
+password = "";
+passwordAdmin = "";
+maxPlayers = 60;
+verifySignatures = 2;
+forceSameBuild = 1;
+disableVoN = 0;
+vonCodecQuality = 20;
+enableDebugMonitor = 0;
+ BattlEyeSecure = 1;
+ BattlEyeNetwork = 1;
+disable3rdPerson = 0;
+disableCrosshair = 0;
+serverTime="SystemTime";
+serverTimeAcceleration = 1;
+serverNightTimeAcceleration = 1;
+serverTimePersistent = 0;
+guaranteedUpdates = 1;
+loginQueueCoalesce = 1;
+instanceId = 1;
+storeHouseStateDisabled = 0;
+storageAutoFix = 1;
+

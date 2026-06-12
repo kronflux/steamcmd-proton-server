@@ -1,0 +1,6 @@
+=== @DATA@/config/Game.ini ===
+[Seeded]
+ServerName=Seeded
+
+=== @DATA@/saves/world.sav ===
+seed

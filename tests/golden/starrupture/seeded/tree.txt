@@ -1,0 +1,8 @@
+d @DATA@/config
+d @DATA@/saves
+d @GAME@/StarRupture
+d @GAME@/StarRupture/Saved
+f @DATA@/config/DSSettings.txt
+f @DATA@/saves/auto.sav
+l @GAME@/DSSettings.txt
+l @GAME@/StarRupture/Saved/SaveGames

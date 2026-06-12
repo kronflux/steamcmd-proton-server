@@ -1,0 +1,5 @@
+=== @DATA@/config/ServerSettings.ini ===
+[Scum.ServerSettings]
+
+=== @DATA@/saves/SCUM.db ===
+seed

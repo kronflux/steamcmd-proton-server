@@ -1,0 +1,8 @@
+=== @DATA@/config/serverconfig.ini ===
+[Subnautica]
+ServerName=Subnautica Docker Server
+ServerPassword=
+MaxPlayers=100
+GamePort=7777
+QueryPort=7778
+

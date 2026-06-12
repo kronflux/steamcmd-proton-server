@@ -1,0 +1,2 @@
+d @DATA@/config
+f @DATA@/config/server.cfg
