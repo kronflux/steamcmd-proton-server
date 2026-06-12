@@ -27,9 +27,6 @@ generate_game_config() {
         subnautica-nitrox)
             generate_nitrox_config
             ;;
-        dayz)
-            generate_dayz_config
-            ;;
         starrupture)
             generate_starrupture_config
             ;;
@@ -239,45 +236,6 @@ generate_sotf_config() {
 
     log_info "Config: ${data_cfg_dir}/"
     log_info "Saves:  ${data_saves_dir}/"
-}
-
-# DayZ Configuration
-generate_dayz_config() {
-    log_info "Generating DayZ configuration..."
-
-    local config_dir="${DATA_DIR}/config"
-    local server_cfg="${config_dir}/server.cfg"
-    mkdir -p "$config_dir"
-
-    cat > "$server_cfg" << EOF
-// DayZ Server Configuration
-// Generated on $(date)
-
-hostname = "${SERVER_NAME:-DayZ Docker Server}";
-password = "${SERVER_PASSWORD:-}";
-passwordAdmin = "${ADMIN_PASSWORD:-}";
-maxPlayers = ${MAX_PLAYERS:-60};
-verifySignatures = 2;
-forceSameBuild = 1;
-disableVoN = 0;
-vonCodecQuality = 20;
-enableDebugMonitor = 0;
- BattlEyeSecure = 1;
- BattlEyeNetwork = 1;
-disable3rdPerson = 0;
-disableCrosshair = 0;
-serverTime="SystemTime";
-serverTimeAcceleration = 1;
-serverNightTimeAcceleration = 1;
-serverTimePersistent = 0;
-guaranteedUpdates = 1;
-loginQueueCoalesce = 1;
-instanceId = 1;
-storeHouseStateDisabled = 0;
-storageAutoFix = 1;
-EOF
-
-    log_success "DayZ configuration created"
 }
 
 # Star Rupture Configuration

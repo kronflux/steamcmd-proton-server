@@ -365,9 +365,6 @@ main() {
                     base_args="-verboseLogging"
                 fi
                 ;;
-            dayz)
-                base_args="-config=server.cfg -port=${GAME_PORT:-2302}"
-                ;;
             starrupture)
                 base_args="-Log -nosound -Port=${GAME_PORT:-7777} -QueryPort=${QUERY_PORT:-27015} -ServerName=\"${SERVER_NAME}\" -MULTIHOME=0.0.0.0"
                 if [[ "${SR_DISABLE_WEB_CONTROL:-true}" == "true" ]]; then
