@@ -241,6 +241,7 @@ start_nitrox_server() {
     cd "${nitrox_path}"
 
     # Start Nitrox server (native Linux, no Proton needed)
+    local launch_ts; launch_ts=$(date +%s)
     eval "${nitrox_path}/Nitrox.Server.Subnautica --save \"${nitrox_save_name}\"" >> "$log_file" 2>&1 &
     SERVER_PID=$!
 
@@ -267,6 +268,7 @@ start_nitrox_server() {
     # Wait for server process
     wait $SERVER_PID
     local exit_code=$?
+    capture_fast_exit "$exit_code" "$launch_ts" "$log_file"
 
     # Cleanup
     kill $TAIL_PID 2>/dev/null || true

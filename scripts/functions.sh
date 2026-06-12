@@ -440,6 +440,33 @@ run_user_hook() {
     log_info "User hook completed: ${hook}"
 }
 
+# capture_fast_exit <exit_code> <launch_epoch> <log_file>
+# When a server dies young (< CRASH_CAPTURE_SECONDS, default 60, exit != 0),
+# surface the evidence: log tail + known-signature hints + next steps.
+# CRASH_CAPTURE_SECONDS=0 disables. Always returns 0.
+capture_fast_exit() {
+    local exit_code="$1" launch_ts="$2" log_file="$3"
+    local threshold="${CRASH_CAPTURE_SECONDS:-60}"
+    [[ "$threshold" =~ ^[0-9]+$ ]] || threshold=60
+    [[ "$threshold" -eq 0 ]] && return 0
+    [[ "$exit_code" -eq 0 ]] && return 0
+    local uptime=$(( $(date +%s) - launch_ts ))
+    [[ "$uptime" -ge "$threshold" ]] && return 0
+
+    log_error "========================================="
+    log_error "Server exited ${uptime}s after launch (exit code ${exit_code})"
+    log_error "========================================="
+    if [[ -f "$log_file" ]]; then
+        echo "----- last 40 lines of ${log_file} -----"
+        tail -n 40 "$log_file"
+        echo "----------------------------------------"
+        scan_log_signatures "$log_file" 200
+    fi
+    log_info "Next steps: run '/scripts/doctor.sh' inside the container for a full diagnosis;"
+    log_info "for silent Wine crashes set WINEDEBUG=err+all,fixme-all and restart to surface loader errors."
+    return 0
+}
+
 #######################################
 # GAME MODULE LOADING
 #######################################
@@ -761,4 +788,4 @@ export -f start_xvfb stop_xvfb
 export -f create_backup rcon_send rcon_save rcon_shutdown
 export -f rotate_logs check_server_process check_game_server
 export -f steam_cache_path steam_cache_restore steam_cache_save
-export -f load_game_module load_game_preset persist_dir persist_file scan_log_signatures run_user_hook
+export -f load_game_module load_game_preset persist_dir persist_file scan_log_signatures run_user_hook capture_fast_exit

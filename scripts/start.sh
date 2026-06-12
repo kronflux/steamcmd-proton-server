@@ -228,6 +228,8 @@ main() {
         # stdin from /dev/null prevents a Wine SIGSEGV when stdin is a pipe (Docker default).
         # tee writes to server.log while keeping all output visible in the Docker console.
         local exit_code=0
+        local launch_ts
+        launch_ts=$(date +%s)
         eval "$full_cmd" < /dev/null 2>&1 | tee -a "$log_file"
         exit_code=${PIPESTATUS[0]}
         SERVER_PID=""
@@ -248,6 +250,7 @@ main() {
             continue
         fi
 
+        capture_fast_exit "$exit_code" "$launch_ts" "$log_file"
         break
     done
 

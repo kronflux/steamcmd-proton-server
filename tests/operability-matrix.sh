@@ -123,5 +123,26 @@ rm -rf "$DATA_DIR/hooks"
 out="$(run_user_hook pre-start 2>&1)"
 check "hooks: absent hook is silent no-op" '[[ -z "$out" ]]'
 
+############################
+# Section 6: fast-exit crash capture
+############################
+CLOG="$T/crash.log"
+printf 'boot\nRefusing to run with the root privileges.\nAborted\n' > "$CLOG"
+
+out="$(capture_fast_exit 1 "$(( $(date +%s) - 5 ))" "$CLOG" 2>&1)"
+check "crash: fast abnormal exit captures tail + hint" '[[ "$out" == *"last 40 lines"* && "$out" == *"non-root game_start"* && "$out" == *"doctor.sh"* ]]'
+
+out="$(capture_fast_exit 1 "$(( $(date +%s) - 120 ))" "$CLOG" 2>&1)"
+check "crash: slow exit is silent" '[[ -z "$out" ]]'
+
+out="$(capture_fast_exit 0 "$(( $(date +%s) - 5 ))" "$CLOG" 2>&1)"
+check "crash: exit 0 is silent" '[[ -z "$out" ]]'
+
+out="$(CRASH_CAPTURE_SECONDS=0 capture_fast_exit 1 "$(( $(date +%s) - 5 ))" "$CLOG" 2>&1)"
+check "crash: CRASH_CAPTURE_SECONDS=0 disables" '[[ -z "$out" ]]'
+
+out="$(CRASH_CAPTURE_SECONDS=300 capture_fast_exit 137 "$(( $(date +%s) - 100 ))" "$CLOG" 2>&1)"
+check "crash: custom threshold honored" '[[ "$out" == *"exit code 137"* ]]'
+
 echo "OPERABILITY $( [[ $fail -eq 0 ]] && echo PASS || echo FAIL ) (${pass}/${total})"
 [[ $fail -eq 0 ]]

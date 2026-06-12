@@ -146,6 +146,7 @@ start_vein_server() {
     # Native Linux server — no Proton — run as the non-root user. HOME under /data
     # so any ~/.steam writes persist and are writable. stdin from /dev/null for
     # clean backgrounding.
+    local launch_ts; launch_ts=$(date +%s)
     su -s /bin/bash -c "cd \"${game_dir}\" && HOME=\"${DATA_DIR}\" \"${launcher}\" -log -Port=${game_port} -QueryPort=${query_port}${GAME_ARGS:+ ${GAME_ARGS}}" "$run_user" < /dev/null >> "$log_file" 2>&1 &
     SERVER_PID=$!
 
@@ -169,6 +170,7 @@ start_vein_server() {
 
     wait $SERVER_PID
     local exit_code=$?
+    capture_fast_exit "$exit_code" "$launch_ts" "$log_file"
 
     kill $TAIL_PID 2>/dev/null || true
 
