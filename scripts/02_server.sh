@@ -20,13 +20,6 @@ handle_steam_mode() {
     local beta_branch="${STEAM_BETA:-}"
     local beta_password="${STEAM_BETA_PASSWORD:-}"
 
-    # Special handling for Nitrox (Subnautica)
-    # Nitrox expects Subnautica files in /game/Subnautica/
-    if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
-        install_dir="${GAME_DIR}/Subnautica"
-        log_info "Nitrox mode: Installing Subnautica to ${install_dir}"
-    fi
-
     # Module-declared install subdirectory (generic replacement for per-game cases)
     if [[ -n "${STEAM_INSTALL_SUBDIR:-}" ]]; then
         install_dir="${GAME_DIR}/${STEAM_INSTALL_SUBDIR}"
@@ -117,20 +110,10 @@ handle_steam_mode() {
         log_warn "Changed STEAM_CACHE_KEY recently? That invalidates the cache — supply a fresh STEAM_GUARD_CODE once to re-prime."
     fi
 
-    # Verify the right files for this preset actually landed in install_dir.
-    # Nitrox is a special case: GAME_EXECUTABLE (Nitrox.Server.Subnautica) is
-    # the Nitrox binary installed later by 03_config.sh into ${GAME_DIR}/Nitrox/,
-    # not into the Subnautica install_dir. Verify Subnautica's own files instead.
+    # Modules may provide game_verify_install when GAME_EXECUTABLE alone can't prove a good install.
     if declare -f game_verify_install >/dev/null; then
         if ! game_verify_install; then
             log_error "Installed files failed the module's game_verify_install check"
-            exit 1
-        fi
-    elif [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
-        if [[ ! -f "${install_dir}/Subnautica.exe" ]] && [[ ! -d "${install_dir}/Subnautica_Data" ]]; then
-            log_error "Subnautica game files not found in ${install_dir}"
-            log_info "SteamCMD reported success but neither Subnautica.exe nor Subnautica_Data/ are present."
-            log_info "Inspect actual install location with: find / -name Subnautica.exe -o -name appmanifest_264710.acf 2>/dev/null"
             exit 1
         fi
     else

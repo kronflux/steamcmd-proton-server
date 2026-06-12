@@ -123,85 +123,6 @@ provision_wine_deps() {
 }
 
 #######################################
-# NITROX SERVER STARTUP (Native Linux)
-#######################################
-
-start_nitrox_server() {
-    local nitrox_path="${GAME_DIR}/Nitrox"
-    local nitrox_save_name="${NITROX_SAVE_NAME:-MyServer}"
-    local log_file="${DATA_DIR}/logs/server.log"
-
-    log_info "========================================="
-    log_info "Starting Nitrox Server (Native Linux)"
-    log_info "========================================="
-
-    # Verify Nitrox installation
-    if [[ ! -f "${nitrox_path}/Nitrox.Server.Subnautica" ]]; then
-        log_error "Nitrox.Server.Subnautica not found at ${nitrox_path}"
-        log_error "Run setup again to install Nitrox"
-        exit 1
-    fi
-
-    # Set up environment
-    export SUBNAUTICA_INSTALLATION_PATH="${GAME_DIR}/Subnautica"
-    export PATH="$PATH:/usr/share/dotnet"
-
-    # Create logs directory
-    mkdir -p "${DATA_DIR}/logs"
-    rotate_logs "$log_file"
-
-    # Build Nitrox command
-    local nitrox_cmd="${nitrox_path}/Nitrox.Server.Subnautica --save \"${nitrox_save_name}\""
-
-    log_info "========================================="
-    log_info "Nitrox Configuration:"
-    log_info "  Save Name: ${nitrox_save_name}"
-    log_info "  Nitrox Path: ${nitrox_path}"
-    log_info "  Subnautica: ${SUBNAUTICA_INSTALLATION_PATH}"
-    log_info "  Config: ${DATA_DIR}/saves/${nitrox_save_name}/server.cfg"
-    log_info "========================================="
-    log_info "Starting: ${nitrox_cmd}"
-    log_info "========================================="
-
-    # Change to Nitrox directory
-    cd "${nitrox_path}"
-
-    # Start Nitrox server (native Linux, no Proton needed)
-    eval "${nitrox_path}/Nitrox.Server.Subnautica --save \"${nitrox_save_name}\"" >> "$log_file" 2>&1 &
-    SERVER_PID=$!
-
-    log_success "Nitrox server started (PID: $SERVER_PID)"
-    log_info "Log file: $log_file"
-
-    # Wait a moment to check if server started successfully
-    sleep 5
-
-    if ! kill -0 $SERVER_PID 2>/dev/null; then
-        log_error "Nitrox server exited immediately"
-        log_info "Check logs for errors:"
-        tail -n 50 "$log_file" >&2
-        exit 1
-    fi
-
-    log_success "Nitrox server is running!"
-
-    # Start log tailing in foreground for Docker logs
-    log_info "Tailing logs..."
-    tail -f "$log_file" &
-    TAIL_PID=$!
-
-    # Wait for server process
-    wait $SERVER_PID
-    local exit_code=$?
-
-    # Cleanup
-    kill $TAIL_PID 2>/dev/null || true
-
-    log_info "Nitrox server exited with code: $exit_code"
-    exit $exit_code
-}
-
-#######################################
 # VEIN SERVER STARTUP (Native Linux)
 #######################################
 
@@ -310,12 +231,6 @@ main() {
     # Module-provided launcher (native-Linux servers own their full lifecycle)
     if declare -f game_start >/dev/null; then
         game_start
-        return
-    fi
-
-    # Special handling for Nitrox (native Linux server)
-    if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
-        start_nitrox_server
         return
     fi
 
