@@ -42,7 +42,7 @@ handle_steam_mode() {
 
     # Command pieces shared by every login mode. The +login args are appended
     # between these two when we actually invoke SteamCMD.
-    # Force the Windows depot for Proton games. Native-Linux games (Vein) set
+    # Force the Windows depot for Proton games. Native-Linux games set
     # USE_LINUX_DEPOT=true to skip the flag and pull SteamCMD's native Linux depot.
     # NOTE: never use the var name STEAM_PLATFORM — steamcmd.sh reads it to locate
     # its own binary (/steamcmd/$STEAM_PLATFORM/steamcmd) and would fail to start.

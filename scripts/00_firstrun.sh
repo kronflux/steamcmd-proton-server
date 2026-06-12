@@ -16,7 +16,7 @@ log_info "[00] Running first-run setup..."
 
 # Create necessary directories.
 # ${DATA_DIR}/config is intentionally omitted — it's created on demand by the
-# config generators that use it, so presets like Nitrox don't get an empty one.
+# config generators that use it, so games that store config elsewhere don't get an empty one.
 mkdir -p "${DATA_DIR}/logs" \
          "${DATA_DIR}/saves" \
          "${BACKUP_DIR}" \

@@ -9,21 +9,6 @@ source "${SCRIPT_DIR}/functions.sh"
 load_game_module
 
 #######################################
-# GAME-SPECIFIC CONFIG GENERATORS
-#######################################
-
-generate_game_config() {
-    local game="$1"
-
-    case "$game" in
-        *)
-            log_warn "No specific config generator for: $game"
-            generate_generic_config
-            ;;
-    esac
-}
-
-#######################################
 # GENERIC CONFIG GENERATOR
 #######################################
 
@@ -69,15 +54,15 @@ EOF
 log_info "[03] Generating server configuration..."
 
 # Note: ${DATA_DIR}/config is created by the individual config generators that
-# actually use it. Presets that store config elsewhere (e.g. modules with custom
+# actually use it. Modules that store config elsewhere (e.g. modules with custom
 # save routing) no longer get a stray empty config dir.
 
-# Check for game-specific config generator
 if declare -f game_configure >/dev/null; then
     game_configure
-elif [[ -n "${GAME_CONFIG:-}" ]]; then
-    generate_game_config "${GAME_CONFIG}"   # legacy dispatch — shrinks per migration
 else
+    if [[ -n "${GAME_CONFIG:-}" ]]; then
+        log_warn "No module found for '${GAME_CONFIG}' — using generic configuration"
+    fi
     generate_generic_config
 fi
 

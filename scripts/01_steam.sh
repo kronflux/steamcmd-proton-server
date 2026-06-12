@@ -23,7 +23,7 @@ fi
 
 # Update SteamCMD and prime the app-info cache.
 # Most games run the Windows depot via Proton, so we force the Windows platform.
-# Native-Linux games (e.g. Vein) set USE_LINUX_DEPOT=true to skip the force flag
+# Native-Linux games set USE_LINUX_DEPOT=true in their preset to skip the force flag
 # and let SteamCMD use its native Linux platform. (Do NOT set STEAM_PLATFORM —
 # steamcmd.sh reads that name to find its own binary and would break.)
 log_info "Updating SteamCMD..."

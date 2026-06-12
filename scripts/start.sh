@@ -24,8 +24,7 @@ fi
 
 setup_proton_environment() {
     # PROTON_APP_ID overrides STEAM_APP_ID for the Wine prefix path.
-    # Some games (e.g. SotF dedicated server 2465200) use a different app ID
-    # for their Proton prefix than their SteamCMD download.
+    # Some games use a different app ID for their Proton prefix than for their SteamCMD download.
     local proton_app_id="${PROTON_APP_ID:-${STEAM_APP_ID}}"
 
     export STEAM_COMPAT_DATA_PATH="${STEAM_COMPAT_DATA_PATH:-${DATA_DIR}/.proton/${proton_app_id}}"

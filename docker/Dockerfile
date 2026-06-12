@@ -71,7 +71,7 @@ ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8
 
 # Create necessary directories
-RUN mkdir -p /steamcmd /data /scripts /scripts/presets /root/.steam \
+RUN mkdir -p /steamcmd /data /scripts /root/.steam \
     && chmod +x /scripts
 
 # Null ALSA config - suppresses "Unknown PCM default" errors (no audio hardware in container)
@@ -125,9 +125,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip rsync win
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy scripts and presets
+# Copy scripts and game modules
 COPY scripts/*.sh /scripts/
-COPY scripts/presets/*.conf /scripts/presets/
+COPY scripts/games/ /scripts/games/
 
 # Set script permissions and create cron job for automated backups
 RUN chmod +x /scripts/*.sh \

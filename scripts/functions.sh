@@ -260,8 +260,8 @@ create_backup() {
     log_info "Creating backup: $backup_name"
 
     # Stage the backup in a temp dir. We capture persistent state only — saves and
-    # configs under /data — not the re-downloadable game install (Subnautica alone
-    # is multiple GB and SteamCMD can re-fetch it). The Wine prefix is included for
+    # configs under /data — not the re-downloadable game install (game installs are
+    # multiple GB and SteamCMD can re-fetch them). The Wine prefix is included for
     # Proton games since some store their saves inside it.
     local temp_backup="${backup_dir}/temp_${timestamp}"
     mkdir -p "$temp_backup"
