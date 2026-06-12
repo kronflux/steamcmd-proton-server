@@ -1,0 +1,13 @@
+# Enforce LF in the repo and on checkout for everything the container executes.
+# A Windows-side git tool once flipped start.sh/Dockerfile to CRLF, which breaks
+# bash inside the image — this file makes that impossible.
+* text=auto
+*.sh text eol=lf
+*.conf text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.xml text eol=lf
+Dockerfile text eol=lf
+*.png binary
+*.ico binary
