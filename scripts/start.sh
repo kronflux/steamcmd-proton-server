@@ -365,15 +365,6 @@ main() {
                     base_args="-verboseLogging"
                 fi
                 ;;
-            starrupture)
-                base_args="-Log -nosound -Port=${GAME_PORT:-7777} -QueryPort=${QUERY_PORT:-27015} -ServerName=\"${SERVER_NAME}\" -MULTIHOME=0.0.0.0"
-                if [[ "${SR_DISABLE_WEB_CONTROL:-true}" == "true" ]]; then
-                    base_args="${base_args} -RCWebControlDisable"
-                fi
-                if [[ "${SR_DISABLE_WEB_INTERFACE:-true}" == "true" ]]; then
-                    base_args="${base_args} -RCWebInterfaceDisable"
-                fi
-                ;;
             scum)
                 # SCUM derives its query/raw ports from -port (game+2 / game+1).
                 base_args="-log -port=${GAME_PORT:-7777} -MaxPlayers=${MAX_PLAYERS:-64}"
