@@ -50,36 +50,12 @@ main() {
     if declare -f game_healthcheck >/dev/null; then
         game_healthcheck
     else
-        case "${GAME_CONFIG:-}" in
-            vein)
-                check_vein_health
-                ;;
-            *)
-                # Generic health check - just verify process
-                log_debug "Health check: Generic (process running)"
-                ;;
-        esac
+        # Generic health check - just verify process
+        log_debug "Health check: Generic (process running)"
     fi
 
     log_debug "Health check: OK"
     exit 0
-}
-
-#######################################
-# GAME-SPECIFIC HEALTH CHECKS
-#######################################
-
-check_vein_health() {
-    local query_port="${QUERY_PORT:-27015}"
-
-    # Check if query port is listening
-    if command -v nc &> /dev/null; then
-        if nc -z -u -w 2 127.0.0.1 "$query_port" 2>/dev/null; then
-            log_debug "Health check: Vein query port responsive"
-        else
-            log_warn "Health check: Vein query port not responding"
-        fi
-    fi
 }
 
 main "$@"
