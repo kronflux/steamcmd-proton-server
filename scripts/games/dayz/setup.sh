@@ -15,7 +15,13 @@ generate_dayz_config() {
     local server_cfg="${config_dir}/serverDZ.cfg"
     mkdir -p "$config_dir"
 
-    cat > "$server_cfg" << EOF
+    # Migrate any real game-root config into /data BEFORE generating, then link
+    # the game-root path to it (the server resolves -config relative to its root).
+    persist_file "${GAME_DIR}/serverDZ.cfg" "${server_cfg}"
+
+    # Generate defaults only when no config exists yet — user edits survive restarts.
+    if [[ ! -f "$server_cfg" ]]; then
+        cat > "$server_cfg" << EOF
 // DayZ Server Configuration
 // Generated on $(date)
 
@@ -42,10 +48,8 @@ instanceId = 1;
 storeHouseStateDisabled = 0;
 storageAutoFix = 1;
 EOF
-
-    # The server resolves -config=serverDZ.cfg relative to its root (the launch
-    # cwd); keep the real file in /data/config and link it into place.
-    persist_file "${GAME_DIR}/serverDZ.cfg" "${server_cfg}"
-
-    log_success "DayZ configuration created"
+        log_success "DayZ configuration created"
+    else
+        log_info "Using existing serverDZ.cfg from ${config_dir}/"
+    fi
 }
