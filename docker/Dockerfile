@@ -126,11 +126,19 @@ RUN curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
     && ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet
 
 # unzip/rsync: mod archives (RedLoader, Nitrox) and save/config migration.
-# winetricks/cabextract: provisioning Windows runtime libs into the Wine prefix
-# for games that need them (e.g. SCUM requires vcrun + d3dcompiler + crypt32).
-RUN apt-get update && apt-get install -y --no-install-recommends unzip rsync winetricks cabextract \
+# cabextract: required by winetricks to unpack Windows runtime installers.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip rsync cabextract \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# winetricks is NOT packaged in Debian Trixie — install the upstream script
+# directly (it is a single self-contained shell script; its dependencies
+# cabextract/unzip/wget are installed above). Used to provision Windows runtime
+# libs into the Wine prefix (WINETRICKS_VERBS, e.g. SCUM needs vcrun2017).
+RUN curl -fsSL -o /usr/local/bin/winetricks \
+        https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks \
+    && chmod +x /usr/local/bin/winetricks \
+    && /usr/local/bin/winetricks --version
 
 # Copy scripts and game modules
 COPY scripts/*.sh /scripts/
