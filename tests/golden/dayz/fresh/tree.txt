@@ -1,2 +1,3 @@
 d @DATA@/config
-f @DATA@/config/server.cfg
+f @DATA@/config/serverDZ.cfg
+l @GAME@/serverDZ.cfg

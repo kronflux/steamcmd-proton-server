@@ -1,4 +1,4 @@
-=== @DATA@/config/server.cfg ===
+=== @DATA@/config/serverDZ.cfg ===
 // DayZ Server Configuration
 
 hostname = "DayZ Server";

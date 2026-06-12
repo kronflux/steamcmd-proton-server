@@ -1,1 +1,1 @@
--config=server.cfg -port=2302
+-config=serverDZ.cfg -port=2302
