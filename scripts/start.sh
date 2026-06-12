@@ -365,9 +365,6 @@ main() {
                     base_args="-verboseLogging"
                 fi
                 ;;
-            subnautica)
-                base_args="-batchmode -nographics"
-                ;;
             dayz)
                 base_args="-config=server.cfg -port=${GAME_PORT:-2302}"
                 ;;

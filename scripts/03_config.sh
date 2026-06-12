@@ -24,9 +24,6 @@ generate_game_config() {
             generate_sotf_config
             install_redloader
             ;;
-        subnautica)
-            generate_subnautica_config
-            ;;
         subnautica-nitrox)
             generate_nitrox_config
             ;;
@@ -242,25 +239,6 @@ generate_sotf_config() {
 
     log_info "Config: ${data_cfg_dir}/"
     log_info "Saves:  ${data_saves_dir}/"
-}
-
-# Subnautica Configuration
-generate_subnautica_config() {
-    log_info "Generating Subnautica configuration..."
-
-    local config_dir="${DATA_DIR}/config"
-    mkdir -p "$config_dir"
-
-    cat > "${config_dir}/serverconfig.ini" << EOF
-[Subnautica]
-ServerName=${SERVER_NAME:-Subnautica Docker Server}
-ServerPassword=${SERVER_PASSWORD:-}
-MaxPlayers=${MAX_PLAYERS:-100}
-GamePort=${GAME_PORT:-7777}
-QueryPort=${QUERY_PORT:-7778}
-EOF
-
-    log_success "Subnautica configuration created"
 }
 
 # DayZ Configuration
