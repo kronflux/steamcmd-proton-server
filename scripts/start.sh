@@ -365,13 +365,6 @@ main() {
                     base_args="-verboseLogging"
                 fi
                 ;;
-            scum)
-                # SCUM derives its query/raw ports from -port (game+2 / game+1).
-                base_args="-log -port=${GAME_PORT:-7777} -MaxPlayers=${MAX_PLAYERS:-64}"
-                if [[ "${SCUM_DISABLE_BATTLEYE:-false}" == "true" ]]; then
-                    base_args="${base_args} -nobattleye"
-                fi
-                ;;
         esac
     fi
     local game_args="${base_args}${GAME_ARGS:+ ${GAME_ARGS}}"

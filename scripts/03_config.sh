@@ -30,9 +30,6 @@ generate_game_config() {
         vein)
             generate_vein_config
             ;;
-        scum)
-            generate_scum_config
-            ;;
         *)
             log_warn "No specific config generator for: $game"
             generate_generic_config
@@ -233,59 +230,6 @@ generate_sotf_config() {
 
     log_info "Config: ${data_cfg_dir}/"
     log_info "Saves:  ${data_saves_dir}/"
-}
-
-# SCUM Configuration
-generate_scum_config() {
-    log_info "Generating SCUM configuration..."
-
-    local config_dir="${DATA_DIR}/config"
-    local saves_dir="${DATA_DIR}/saves"
-    # SCUM (Windows server via Proton) writes config under SCUM/Saved/Config/WindowsServer/
-    # and saves under SCUM/Saved/SaveFiles/.
-    local game_config="${GAME_DIR}/SCUM/Saved/Config/WindowsServer"
-    local game_saves="${GAME_DIR}/SCUM/Saved/SaveFiles"
-
-    mkdir -p "${config_dir}" "${saves_dir}"
-
-    # ---- Config directory symlink ----
-    # SCUM generates ServerSettings.ini (and other config) on first run. Keep it in
-    # /data/config/ for easy editing; the game dir path is a symlink pointing back
-    # to it. Migrate any pre-existing config files on upgrade.
-    if [[ -d "${game_config}" && ! -L "${game_config}" ]]; then
-        if [[ -n "$(ls -A "${game_config}" 2>/dev/null)" ]]; then
-            if command -v rsync &>/dev/null; then
-                rsync -a "${game_config}/" "${config_dir}/"
-            else
-                cp -r "${game_config}/." "${config_dir}/"
-            fi
-            log_info "Migrated config → ${config_dir}/"
-        fi
-        rm -rf "${game_config}"
-    fi
-    [[ -L "${game_config}" ]] && rm -f "${game_config}"
-    mkdir -p "${GAME_DIR}/SCUM/Saved/Config"
-    ln -sf "${config_dir}" "${game_config}"
-
-    # ---- SaveFiles directory symlink ----
-    # Saves live in /data/saves/; game dir SaveFiles/ is a symlink to it.
-    if [[ -d "${game_saves}" && ! -L "${game_saves}" ]]; then
-        if [[ -n "$(ls -A "${game_saves}" 2>/dev/null)" ]]; then
-            if command -v rsync &>/dev/null; then
-                rsync -a "${game_saves}/" "${saves_dir}/"
-            else
-                cp -r "${game_saves}/." "${saves_dir}/"
-            fi
-            log_info "Migrated saves → ${saves_dir}/"
-        fi
-        rm -rf "${game_saves}"
-    fi
-    [[ -L "${game_saves}" ]] && rm -f "${game_saves}"
-    mkdir -p "${GAME_DIR}/SCUM/Saved"
-    ln -sf "${saves_dir}" "${game_saves}"
-
-    log_info "Config: ${config_dir}/ (edit ServerSettings.ini after first run)"
-    log_info "Saves:  ${saves_dir}/"
 }
 
 # Vein Configuration
