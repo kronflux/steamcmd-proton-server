@@ -118,8 +118,10 @@ RUN curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
     && rm /tmp/dotnet-install.sh \
     && ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet
 
-# Install unzip for mod archives (RedLoader, Nitrox)
-RUN apt-get update && apt-get install -y --no-install-recommends unzip rsync \
+# unzip/rsync: mod archives (RedLoader, Nitrox) and save/config migration.
+# winetricks/cabextract: provisioning Windows runtime libs into the Wine prefix
+# for games that need them (e.g. SCUM requires vcrun + d3dcompiler + crypt32).
+RUN apt-get update && apt-get install -y --no-install-recommends unzip rsync winetricks cabextract \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

@@ -56,6 +56,9 @@ main() {
         vein)
             check_vein_health
             ;;
+        scum)
+            check_scum_health
+            ;;
         valheim)
             check_valheim_health
             ;;
@@ -121,6 +124,19 @@ check_vein_health() {
             log_debug "Health check: Vein query port responsive"
         else
             log_warn "Health check: Vein query port not responding"
+        fi
+    fi
+}
+
+check_scum_health() {
+    local query_port="${QUERY_PORT:-7779}"
+
+    # SCUM's query / connect port is TCP (game port + 2).
+    if command -v nc &> /dev/null; then
+        if nc -z -w 2 127.0.0.1 "$query_port" 2>/dev/null; then
+            log_debug "Health check: SCUM query port responsive"
+        else
+            log_warn "Health check: SCUM query port not responding"
         fi
     fi
 }

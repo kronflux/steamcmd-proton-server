@@ -51,7 +51,9 @@ setup_proton_environment() {
     # Proton requires the /pfx subdirectory as the Wine prefix root.
     export WINEPREFIX="${STEAM_COMPAT_DATA_PATH}/pfx"
     export WINEARCH=win64
-    export WINEDEBUG="-all"
+    # Default to silencing Wine, but allow override (e.g. WINEDEBUG=fixme-all,err+all
+    # to surface missing-DLL / load errors when a Windows server crashes silently).
+    export WINEDEBUG="${WINEDEBUG:--all}"
 
     # XDG runtime directory
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
@@ -80,6 +82,43 @@ setup_display_environment() {
         export LIBGL_ALWAYS_SOFTWARE=1
         log_info "Starting Xvfb..."
         start_xvfb
+    fi
+}
+
+#######################################
+# WINE PREFIX DEPENDENCY PROVISIONING
+#######################################
+
+# Install Windows runtime libraries into the Proton/Wine prefix for games that
+# need them. Opt-in per preset via WINETRICKS_VERBS (space-separated winetricks
+# verbs). Runs once per prefix (tracked by a marker), so restarts are fast.
+provision_wine_deps() {
+    [[ -z "${WINETRICKS_VERBS:-}" ]] && return 0
+
+    local marker="${STEAM_COMPAT_DATA_PATH}/.winetricks_done"
+    if [[ -f "$marker" ]]; then
+        log_info "Wine runtime deps already provisioned (${WINETRICKS_VERBS})"
+        return 0
+    fi
+    if ! command -v winetricks >/dev/null 2>&1; then
+        log_warn "winetricks not installed — cannot provision Wine deps: ${WINETRICKS_VERBS}"
+        return 0
+    fi
+
+    log_info "Provisioning Wine runtime deps via winetricks: ${WINETRICKS_VERBS}"
+    log_info "(first run for this prefix only — this can take several minutes)"
+
+    # Install into the same prefix the game runs in. mscoree/mshtml=d skips the
+    # Mono/Gecko install prompts. Word-splitting of the verb list is intentional.
+    local wine_bin; wine_bin="$(command -v wine64 || command -v wine)"
+    # shellcheck disable=SC2086
+    if WINE="$wine_bin" WINEPREFIX="${STEAM_COMPAT_DATA_PATH}/pfx" \
+       WINEDLLOVERRIDES="mscoree=d;mshtml=d" WINEDEBUG="-all" \
+       winetricks -q -f ${WINETRICKS_VERBS} >> "$log_file" 2>&1; then
+        touch "$marker"
+        log_success "Wine runtime deps installed"
+    else
+        log_warn "winetricks reported errors — the server may still fail if deps are missing"
     fi
 }
 
@@ -299,6 +338,9 @@ main() {
     # Rotate logs if needed
     rotate_logs "$log_file"
 
+    # Install any required Windows runtime libs into the prefix (opt-in per preset).
+    provision_wine_deps
+
     # Build command
     local game_exe="${GAME_DIR}/${GAME_EXECUTABLE}"
     local proton_cmd="${PROTONPATH}/proton run"
@@ -328,6 +370,13 @@ main() {
             fi
             if [[ "${SR_DISABLE_WEB_INTERFACE:-true}" == "true" ]]; then
                 base_args="${base_args} -RCWebInterfaceDisable"
+            fi
+            ;;
+        scum)
+            # SCUM derives its query/raw ports from -port (game+2 / game+1).
+            base_args="-log -port=${GAME_PORT:-7777} -MaxPlayers=${MAX_PLAYERS:-64}"
+            if [[ "${SCUM_DISABLE_BATTLEYE:-false}" == "true" ]]; then
+                base_args="${base_args} -nobattleye"
             fi
             ;;
     esac

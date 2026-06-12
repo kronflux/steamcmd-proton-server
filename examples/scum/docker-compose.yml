@@ -1,0 +1,48 @@
+# SCUM Dedicated Server
+
+services:
+  scum:
+    image: kronflux/steamcmd-proton-server:latest
+    container_name: scum
+    restart: unless-stopped
+
+    environment:
+      # Core (preset sets STEAM_APP_ID, GAME_EXECUTABLE, NEEDS_DISPLAY)
+      - GAME_CONFIG=scum
+
+      # Gameplay
+      - MAX_PLAYERS=64
+      # Server name, password and other settings live in ServerSettings.ini,
+      # generated under ./data/config on first run — edit it and restart.
+
+      # Anti-cheat
+      - SCUM_DISABLE_BATTLEYE=false       # true disables BattlEye (not recommended)
+
+      # Ports — SCUM uses three consecutive ports; players connect on GAME_PORT + 2.
+      - GAME_PORT=7777                    # Game client port (UDP)
+      - QUERY_PORT=7779                   # Steam query / connect port (GAME_PORT + 2)
+
+      # Steam
+      - STEAM_USER=anonymous
+      - STEAM_VALIDATE=false
+
+      # Backup
+      - BACKUP_RETENTION=7
+
+    ports:
+      - "7777:7777/udp"                   # Game client port
+      - "7778:7778/udp"                   # Raw UDP socket (GAME_PORT + 1)
+      - "7779:7779/tcp"                   # Steam query / player connect (GAME_PORT + 2)
+      # - "7777:7777/tcp"                 # RCON (optional)
+
+    volumes:
+      - ./data:/data
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 12G
+        reservations:
+          cpus: '2'
+          memory: 8G
