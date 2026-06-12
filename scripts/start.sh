@@ -356,16 +356,6 @@ main() {
     local base_args=""
     if declare -f game_args >/dev/null; then
         base_args="$(game_args)"
-    else
-        case "${GAME_CONFIG:-}" in
-            sons-of-the-forest|sons-of-the-forest-modded)
-                # Do NOT pass -nographics: it forces NullGfxDevice which crashes SotF's HDRP shaders.
-                # Verbose logging is opt-in (generates large log output).
-                if [[ "${SOTF_VERBOSE_LOGGING:-false}" == "true" ]]; then
-                    base_args="-verboseLogging"
-                fi
-                ;;
-        esac
     fi
     local game_args="${base_args}${GAME_ARGS:+ ${GAME_ARGS}}"
 
