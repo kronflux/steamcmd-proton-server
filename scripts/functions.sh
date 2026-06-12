@@ -367,6 +367,43 @@ persist_file() {
 }
 
 #######################################
+# DIAGNOSTICS
+#######################################
+
+# scan_log_signatures <log_file> [tail_lines=200]
+# Greps the tail of a log against known failure signatures and prints one
+# actionable hint per matched rule. Rules live in:
+#   ${SCRIPT_DIR:-/scripts}/diagnostics.d/*.conf   (baked)
+#   ${DATA_DIR:-/data}/diagnostics.d/*.conf        (user-extensible, no rebuild)
+# Format per line: <extended-regex><TAB><hint>. '#' and blank lines ignored.
+# Always returns 0; prints nothing when no rule matches.
+scan_log_signatures() {
+    local log_file="$1" tail_lines="${2:-200}"
+    [[ -f "$log_file" ]] || return 0
+    local excerpt
+    excerpt="$(tail -n "$tail_lines" "$log_file" 2>/dev/null)" || return 0
+    [[ -z "$excerpt" ]] && return 0
+
+    local table rule regex hint matched=0
+    for table in "${SCRIPT_DIR:-/scripts}/diagnostics.d/"*.conf "${DATA_DIR:-/data}/diagnostics.d/"*.conf; do
+        [[ -f "$table" ]] || continue
+        while IFS= read -r rule; do
+            [[ -z "$rule" || "$rule" == \#* ]] && continue
+            regex="${rule%%$'\t'*}"
+            hint="${rule#*$'\t'}"
+            [[ -z "$regex" || "$regex" == "$rule" ]] && continue   # malformed line (no TAB)
+            if grep -qiE "$regex" <<< "$excerpt"; then
+                matched=$((matched + 1))
+                log_warn "Detected: ${regex}"
+                log_info "  → ${hint}"
+            fi
+        done < "$table"
+    done
+    [[ $matched -gt 0 ]] && log_info "(${matched} known signature(s) matched — hints above)"
+    return 0
+}
+
+#######################################
 # GAME MODULE LOADING
 #######################################
 # A game module is a directory providing:
@@ -398,6 +435,10 @@ load_game_module() {
         [[ -z "$setup"  && -f "${root}/${name}/setup.sh"   ]] && setup="${root}/${name}/setup.sh"
     done
     [[ -z "$preset" && -f "$legacy_preset" ]] && preset="$legacy_preset"
+
+    # Exported for diagnostics (doctor.sh) — where this module actually resolved from.
+    export GAME_MODULE_PRESET_PATH="$preset"
+    export GAME_MODULE_SETUP_PATH="$setup"
 
     if [[ -n "$preset" ]]; then
         tag=""; [[ "$preset" == "${data_root}/"* ]] && tag=" (USER OVERRIDE)"
@@ -683,4 +724,4 @@ export -f start_xvfb stop_xvfb
 export -f create_backup rcon_send rcon_save rcon_shutdown
 export -f rotate_logs check_server_process check_game_server
 export -f steam_cache_path steam_cache_restore steam_cache_save
-export -f load_game_module load_game_preset persist_dir persist_file
+export -f load_game_module load_game_preset persist_dir persist_file scan_log_signatures
