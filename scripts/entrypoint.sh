@@ -44,6 +44,9 @@ main() {
     # Run initialization scripts in order
     run_init_scripts
 
+    # User lifecycle hook: after install/config, before launch handoff.
+    run_user_hook post-install
+
     # Mark as initialized
     touch "${DATA_DIR}/.initialized"
 

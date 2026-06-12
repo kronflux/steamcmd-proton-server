@@ -424,6 +424,22 @@ scan_log_signatures() {
     return 0
 }
 
+# run_user_hook <stage>
+# Executes ${DATA_DIR}/hooks/<stage>.sh if present (stages: post-install, pre-start).
+# Sourced with full env + functions available. Fail-loud: a broken hook aborts
+# the start, matching the module-overlay contract.
+run_user_hook() {
+    local stage="$1"
+    local hook="${DATA_DIR:-/data}/hooks/${stage}.sh"
+    [[ -f "$hook" ]] || return 0
+    local syntax_err
+    syntax_err=$(bash -n "$hook" 2>&1) || { log_error "Syntax error in user hook ${hook}: ${syntax_err}"; exit 1; }
+    log_info "Executing user hook: ${hook}"
+    # shellcheck disable=SC1090
+    source "$hook" || { log_error "User hook failed (nonzero exit): ${hook}"; exit 1; }
+    log_info "User hook completed: ${hook}"
+}
+
 #######################################
 # GAME MODULE LOADING
 #######################################
@@ -745,4 +761,4 @@ export -f start_xvfb stop_xvfb
 export -f create_backup rcon_send rcon_save rcon_shutdown
 export -f rotate_logs check_server_process check_game_server
 export -f steam_cache_path steam_cache_restore steam_cache_save
-export -f load_game_module load_game_preset persist_dir persist_file scan_log_signatures
+export -f load_game_module load_game_preset persist_dir persist_file scan_log_signatures run_user_hook

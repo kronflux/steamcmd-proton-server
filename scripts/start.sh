@@ -153,6 +153,9 @@ main() {
 
     load_game_module
 
+    # User lifecycle hook: last word before any launch path (native or Proton).
+    run_user_hook pre-start
+
     # Module-provided launcher (native-Linux servers own their full lifecycle)
     if declare -f game_start >/dev/null; then
         game_start

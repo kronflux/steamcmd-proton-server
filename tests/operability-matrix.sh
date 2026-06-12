@@ -107,5 +107,21 @@ check "pin: unset falls back to latest present" '[[ "$PROTONPATH" == *"/GE-Proto
 url_line="$(grep -c 'releases/download/\${PROTON_VERSION}/\${PROTON_VERSION}.tar.gz' "${REPO_ROOT}/scripts/01_steam.sh" || true)"
 check "pin: 01_steam builds exact tag URL" '[[ "$url_line" == "1" ]]'
 
+############################
+# Section 5: user lifecycle hooks
+############################
+mkdir -p "$DATA_DIR/hooks"
+printf 'echo HOOK-RAN-WITH-%s "${GAME_CONFIG:-none}" > "%s/hook.out"\n' 'CONFIG' "$T" > "$DATA_DIR/hooks/pre-start.sh"
+( GAME_CONFIG=demo run_user_hook pre-start >/dev/null 2>&1 )
+check "hooks: executes with env available" '[[ "$(cat "$T/hook.out" 2>/dev/null)" == "HOOK-RAN-WITH-CONFIG demo" ]]'
+
+printf 'this is ( not bash\n' > "$DATA_DIR/hooks/post-install.sh"
+rc=0; ( run_user_hook post-install >/dev/null 2>&1 ) || rc=$?
+check "hooks: broken hook aborts" '[[ $rc -ne 0 ]]'
+
+rm -rf "$DATA_DIR/hooks"
+out="$(run_user_hook pre-start 2>&1)"
+check "hooks: absent hook is silent no-op" '[[ -z "$out" ]]'
+
 echo "OPERABILITY $( [[ $fail -eq 0 ]] && echo PASS || echo FAIL ) (${pass}/${total})"
 [[ $fail -eq 0 ]]
