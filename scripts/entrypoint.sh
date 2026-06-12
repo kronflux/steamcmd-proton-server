@@ -22,7 +22,7 @@ main() {
     log_info "========================================="
 
     # Load game preset if specified
-    load_game_preset
+    load_game_module
 
     # Validate required environment variables
     validate_required_vars || exit 1

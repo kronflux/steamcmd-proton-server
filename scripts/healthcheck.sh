@@ -6,6 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/functions.sh"
+load_game_module
 
 # Health check timeout and thresholds
 HEALTH_TIMEOUT=${HEALTH_CHECK_TIMEOUT:-120}
@@ -46,27 +47,31 @@ main() {
     fi
 
     # Game-specific health checks
-    case "${GAME_CONFIG:-}" in
-        sons-of-the-forest)
-            check_sotf_health
-            ;;
-        starrupture)
-            check_starrupture_health
-            ;;
-        vein)
-            check_vein_health
-            ;;
-        scum)
-            check_scum_health
-            ;;
-        valheim)
-            check_valheim_health
-            ;;
-        *)
-            # Generic health check - just verify process
-            log_debug "Health check: Generic (process running)"
-            ;;
-    esac
+    if declare -f game_healthcheck >/dev/null; then
+        game_healthcheck
+    else
+        case "${GAME_CONFIG:-}" in
+            sons-of-the-forest)
+                check_sotf_health
+                ;;
+            starrupture)
+                check_starrupture_health
+                ;;
+            vein)
+                check_vein_health
+                ;;
+            scum)
+                check_scum_health
+                ;;
+            valheim)
+                check_valheim_health
+                ;;
+            *)
+                # Generic health check - just verify process
+                log_debug "Health check: Generic (process running)"
+                ;;
+        esac
+    fi
 
     log_debug "Health check: OK"
     exit 0

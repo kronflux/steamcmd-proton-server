@@ -324,29 +324,103 @@ create_backup() {
 }
 
 #######################################
-# GAME PRESET HANDLING
+# PERSISTENCE HELPERS
 #######################################
+# Standard migrate-and-symlink wiring used by game modules: real game-side
+# files/dirs are migrated into /data once, then replaced by symlinks so all
+# state lives on the persistent volume. Idempotent across restarts.
 
-load_game_preset() {
-    local preset="${GAME_CONFIG:-}"
-    local preset_dir="/scripts/presets"
+# persist_dir <game_path> <data_path>
+persist_dir() {
+    local game_path="$1" data_path="$2"
+    mkdir -p "$data_path"
+    if [[ -d "$game_path" && ! -L "$game_path" ]]; then
+        if [[ -n "$(ls -A "$game_path" 2>/dev/null)" ]]; then
+            if command -v rsync &>/dev/null; then
+                rsync -a "${game_path}/" "${data_path}/"
+            else
+                cp -r "${game_path}/." "${data_path}/"
+            fi
+            log_info "Migrated $(basename "$game_path") → ${data_path}/"
+        fi
+        rm -rf "$game_path"
+    fi
+    [[ -L "$game_path" ]] && rm -f "$game_path"
+    mkdir -p "$(dirname "$game_path")"
+    ln -sf "$data_path" "$game_path"
+}
 
-    if [[ -z "$preset" ]]; then
-        log_debug "No game preset specified"
+# persist_file <game_path> <data_path>
+persist_file() {
+    local game_path="$1" data_path="$2"
+    mkdir -p "$(dirname "$data_path")"
+    if [[ -f "$game_path" && ! -L "$game_path" ]]; then
+        if [[ ! -s "$data_path" ]]; then
+            cp "$game_path" "$data_path"
+            log_info "Migrated $(basename "$game_path") → $(dirname "$data_path")/"
+        fi
+        rm -f "$game_path"
+    fi
+    [[ -L "$game_path" ]] && rm -f "$game_path"
+    mkdir -p "$(dirname "$game_path")"
+    ln -sf "$data_path" "$game_path"
+}
+
+#######################################
+# GAME MODULE LOADING
+#######################################
+# A game module is a directory providing:
+#   preset.conf — environment defaults (sourced first)
+#   setup.sh    — optional hook functions: game_configure, game_args,
+#                 game_start, game_healthcheck, game_verify_install
+# Resolution is PER FILE, first match wins:
+#   1. ${DATA_DIR}/games/<name>/        user overlay — add or patch a game, no rebuild
+#   2. ${SCRIPT_DIR}/games/<name>/      baked module
+#   3. ${SCRIPT_DIR}/presets/<name>.conf  legacy preset location (preset only)
+# Each consumer script calls this itself: hook FUNCTIONS do not cross the
+# process boundary between entrypoint, the numbered scripts, and the Docker
+# healthcheck exec — only exported variables do.
+load_game_module() {
+    local name="${GAME_CONFIG:-}"
+    [[ -z "$name" ]] && return 0
+    if [[ "$name" == _* ]]; then
+        log_warn "Module name '${name}' is reserved — using generic configuration"
         return 0
     fi
 
-    local preset_file="${preset_dir}/${preset}.conf"
+    local data_root="${DATA_DIR:-/data}/games"
+    local baked_root="${SCRIPT_DIR:-/scripts}/games"
+    local legacy_preset="${SCRIPT_DIR:-/scripts}/presets/${name}.conf"
+    local preset="" setup="" root tag syntax_err
 
-    if [[ -f "$preset_file" ]]; then
-        log_info "Loading preset: $preset"
-        # Source the preset file
-        source "$preset_file"
-        log_success "Preset loaded: $preset"
+    for root in "$data_root" "$baked_root"; do
+        [[ -z "$preset" && -f "${root}/${name}/preset.conf" ]] && preset="${root}/${name}/preset.conf"
+        [[ -z "$setup"  && -f "${root}/${name}/setup.sh"   ]] && setup="${root}/${name}/setup.sh"
+    done
+    [[ -z "$preset" && -f "$legacy_preset" ]] && preset="$legacy_preset"
+
+    if [[ -n "$preset" ]]; then
+        tag=""; [[ "$preset" == "${data_root}/"* ]] && tag=" (USER OVERRIDE)"
+        syntax_err=$(bash -n "$preset" 2>&1) || { log_error "Syntax error in ${preset}: ${syntax_err}"; exit 1; }
+        # shellcheck disable=SC1090
+        source "$preset"
+        log_info "Module '${name}': preset.conf from $(dirname "$preset")/${tag}"
     else
-        log_warn "Preset not found: $preset_file"
+        log_debug "Module '${name}': no preset found (environment-only configuration)"
     fi
+
+    if [[ -n "$setup" ]]; then
+        tag=""; [[ "$setup" == "${data_root}/"* ]] && tag=" (USER OVERRIDE)"
+        syntax_err=$(bash -n "$setup" 2>&1) || { log_error "Syntax error in ${setup}: ${syntax_err}"; exit 1; }
+        # shellcheck disable=SC1090
+        source "$setup"
+        log_info "Module '${name}': setup.sh from $(dirname "$setup")/${tag}"
+    fi
+    return 0
 }
+
+# Deprecated alias — kept one release for compatibility.
+load_game_preset() { load_game_module "$@"; }
 
 #######################################
 # CONFIG VALIDATION
@@ -609,3 +683,4 @@ export -f start_xvfb stop_xvfb
 export -f create_backup rcon_send rcon_save rcon_shutdown
 export -f rotate_logs check_server_process check_game_server
 export -f steam_cache_path steam_cache_restore steam_cache_save
+export -f load_game_module load_game_preset persist_dir persist_file

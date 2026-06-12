@@ -305,6 +305,14 @@ main() {
     # Validate required variables
     validate_required_vars || exit 1
 
+    load_game_module
+
+    # Module-provided launcher (native-Linux servers own their full lifecycle)
+    if declare -f game_start >/dev/null; then
+        game_start
+        return
+    fi
+
     # Special handling for Nitrox (native Linux server)
     if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
         start_nitrox_server
@@ -346,40 +354,44 @@ main() {
     local proton_cmd="${PROTONPATH}/proton run"
 
     local base_args=""
-    case "${GAME_CONFIG:-}" in
-        sons-of-the-forest|sons-of-the-forest-modded)
-            # Do NOT pass -nographics: it forces NullGfxDevice which crashes SotF's HDRP shaders.
-            # Verbose logging is opt-in (generates large log output).
-            if [[ "${SOTF_VERBOSE_LOGGING:-false}" == "true" ]]; then
-                base_args="-verboseLogging"
-            fi
-            ;;
-        valheim)
-            base_args="-batchmode -nographics -port ${GAME_PORT:-2456} -name \"${SERVER_NAME}\" -password \"${SERVER_PASSWORD:-}\" -world \"${WORLD_NAME:-Dedicated}\" -public 1"
-            ;;
-        subnautica)
-            base_args="-batchmode -nographics"
-            ;;
-        dayz)
-            base_args="-config=server.cfg -port=${GAME_PORT:-2302}"
-            ;;
-        starrupture)
-            base_args="-Log -nosound -Port=${GAME_PORT:-7777} -QueryPort=${QUERY_PORT:-27015} -ServerName=\"${SERVER_NAME}\" -MULTIHOME=0.0.0.0"
-            if [[ "${SR_DISABLE_WEB_CONTROL:-true}" == "true" ]]; then
-                base_args="${base_args} -RCWebControlDisable"
-            fi
-            if [[ "${SR_DISABLE_WEB_INTERFACE:-true}" == "true" ]]; then
-                base_args="${base_args} -RCWebInterfaceDisable"
-            fi
-            ;;
-        scum)
-            # SCUM derives its query/raw ports from -port (game+2 / game+1).
-            base_args="-log -port=${GAME_PORT:-7777} -MaxPlayers=${MAX_PLAYERS:-64}"
-            if [[ "${SCUM_DISABLE_BATTLEYE:-false}" == "true" ]]; then
-                base_args="${base_args} -nobattleye"
-            fi
-            ;;
-    esac
+    if declare -f game_args >/dev/null; then
+        base_args="$(game_args)"
+    else
+        case "${GAME_CONFIG:-}" in
+            sons-of-the-forest|sons-of-the-forest-modded)
+                # Do NOT pass -nographics: it forces NullGfxDevice which crashes SotF's HDRP shaders.
+                # Verbose logging is opt-in (generates large log output).
+                if [[ "${SOTF_VERBOSE_LOGGING:-false}" == "true" ]]; then
+                    base_args="-verboseLogging"
+                fi
+                ;;
+            valheim)
+                base_args="-batchmode -nographics -port ${GAME_PORT:-2456} -name \"${SERVER_NAME}\" -password \"${SERVER_PASSWORD:-}\" -world \"${WORLD_NAME:-Dedicated}\" -public 1"
+                ;;
+            subnautica)
+                base_args="-batchmode -nographics"
+                ;;
+            dayz)
+                base_args="-config=server.cfg -port=${GAME_PORT:-2302}"
+                ;;
+            starrupture)
+                base_args="-Log -nosound -Port=${GAME_PORT:-7777} -QueryPort=${QUERY_PORT:-27015} -ServerName=\"${SERVER_NAME}\" -MULTIHOME=0.0.0.0"
+                if [[ "${SR_DISABLE_WEB_CONTROL:-true}" == "true" ]]; then
+                    base_args="${base_args} -RCWebControlDisable"
+                fi
+                if [[ "${SR_DISABLE_WEB_INTERFACE:-true}" == "true" ]]; then
+                    base_args="${base_args} -RCWebInterfaceDisable"
+                fi
+                ;;
+            scum)
+                # SCUM derives its query/raw ports from -port (game+2 / game+1).
+                base_args="-log -port=${GAME_PORT:-7777} -MaxPlayers=${MAX_PLAYERS:-64}"
+                if [[ "${SCUM_DISABLE_BATTLEYE:-false}" == "true" ]]; then
+                    base_args="${base_args} -nobattleye"
+                fi
+                ;;
+        esac
+    fi
     local game_args="${base_args}${GAME_ARGS:+ ${GAME_ARGS}}"
 
     # Use Windows Z:\ path - a Unix path triggers Proton's /unix dispatch which

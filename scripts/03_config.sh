@@ -6,6 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/functions.sh"
+load_game_module
 
 #######################################
 # GAME-SPECIFIC CONFIG GENERATORS
@@ -877,10 +878,10 @@ log_info "[03] Generating server configuration..."
 # ${DATA_DIR}/saves/<name>/server.cfg) no longer get a stray empty config dir.
 
 # Check for game-specific config generator
-preset="${GAME_CONFIG:-}"
-
-if [[ -n "$preset" ]]; then
-    generate_game_config "$preset"
+if declare -f game_configure >/dev/null; then
+    game_configure
+elif [[ -n "${GAME_CONFIG:-}" ]]; then
+    generate_game_config "${GAME_CONFIG}"   # legacy dispatch — shrinks per migration
 else
     generate_generic_config
 fi

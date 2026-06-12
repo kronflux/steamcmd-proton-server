@@ -6,6 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/functions.sh"
+load_game_module
 
 #######################################
 # STEAM MODE
@@ -24,6 +25,12 @@ handle_steam_mode() {
     if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
         install_dir="${GAME_DIR}/Subnautica"
         log_info "Nitrox mode: Installing Subnautica to ${install_dir}"
+    fi
+
+    # Module-declared install subdirectory (generic replacement for per-game cases)
+    if [[ -n "${STEAM_INSTALL_SUBDIR:-}" ]]; then
+        install_dir="${GAME_DIR}/${STEAM_INSTALL_SUBDIR}"
+        log_info "Installing to subdirectory: ${install_dir}"
     fi
 
     # Pre-create steamapps dir so +force_install_dir IPC call doesn't time out
@@ -114,7 +121,12 @@ handle_steam_mode() {
     # Nitrox is a special case: GAME_EXECUTABLE (Nitrox.Server.Subnautica) is
     # the Nitrox binary installed later by 03_config.sh into ${GAME_DIR}/Nitrox/,
     # not into the Subnautica install_dir. Verify Subnautica's own files instead.
-    if [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
+    if declare -f game_verify_install >/dev/null; then
+        if ! game_verify_install; then
+            log_error "Installed files failed the module's game_verify_install check"
+            exit 1
+        fi
+    elif [[ "${GAME_CONFIG:-}" == "subnautica-nitrox" ]]; then
         if [[ ! -f "${install_dir}/Subnautica.exe" ]] && [[ ! -d "${install_dir}/Subnautica_Data" ]]; then
             log_error "Subnautica game files not found in ${install_dir}"
             log_info "SteamCMD reported success but neither Subnautica.exe nor Subnautica_Data/ are present."
