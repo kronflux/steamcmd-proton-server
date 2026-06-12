@@ -44,8 +44,15 @@ setup_proton_environment() {
     export PROTON_DISABLE_NVAPI=1
     # Disable NGX updater
     export PROTON_ENABLE_NGX_UPDATER=0
-    # Prevents DXVK from initializing Vulkan in GPU-less containers.
-    export PROTON_NO_D3D11=1
+    # d3d11: many Windows servers statically import d3d11.dll and fail to load
+    # without it (loader status c0000135, instant exit) even though a headless
+    # server never renders. By default we strip DXVK's d3d11 to avoid Vulkan
+    # init attempts in GPU-less containers; games that import d3d11 set
+    # PROTON_KEEP_D3D11=true in their preset to keep the DLL available (no render
+    # device is created, so no GPU/Vulkan is actually used).
+    if [[ "${PROTON_KEEP_D3D11:-false}" != "true" ]]; then
+        export PROTON_NO_D3D11=1
+    fi
 
     # Proton requires the /pfx subdirectory as the Wine prefix root.
     export WINEPREFIX="${STEAM_COMPAT_DATA_PATH}/pfx"

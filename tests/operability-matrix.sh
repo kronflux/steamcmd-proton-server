@@ -154,5 +154,19 @@ check "crash: CRASH_CAPTURE_SECONDS=0 disables" '[[ -z "$out" ]]'
 out="$(CRASH_CAPTURE_SECONDS=300 capture_fast_exit 137 "$(( $(date +%s) - 100 ))" "$CLOG" 2>&1)"
 check "crash: custom threshold honored" '[[ "$out" == *"exit code 137"* ]]'
 
+############################
+# Section 7: d3d11 gating
+############################
+# Regression (SCUM crash 2026-06-12): PROTON_NO_D3D11=1 was set unconditionally,
+# stripping d3d11.dll — d3d11-importing servers (SCUM) died with loader c0000135.
+# Default still strips it; games keep it via PROTON_KEEP_D3D11=true.
+eval "$(sed -n '/^setup_proton_environment()/,/^}/p' "${REPO_ROOT}/scripts/start.sh")"
+r1=$( STEAM_APP_ID=1 DATA_DIR="$T/pe1" setup_proton_environment >/dev/null 2>&1; echo "${PROTON_NO_D3D11:-unset}" )
+check "d3d11: stripped by default" '[[ "$r1" == "1" ]]'
+r2=$( STEAM_APP_ID=1 DATA_DIR="$T/pe2" PROTON_KEEP_D3D11=true setup_proton_environment >/dev/null 2>&1; echo "${PROTON_NO_D3D11:-unset}" )
+check "d3d11: kept when PROTON_KEEP_D3D11=true" '[[ "$r2" == "unset" ]]'
+# SCUM's preset opts in so the import resolves under Proton.
+check "d3d11: scum preset sets PROTON_KEEP_D3D11" 'grep -q "PROTON_KEEP_D3D11" "${REPO_ROOT}/scripts/games/scum/preset.conf"'
+
 echo "OPERABILITY $( [[ $fail -eq 0 ]] && echo PASS || echo FAIL ) (${pass}/${total})"
 [[ $fail -eq 0 ]]
