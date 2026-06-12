@@ -25,7 +25,7 @@ This container supports any Windows-based Steam dedicated server, including:
 | Sons of the Forest | 2465200 |
 | Valheim | 896660 |
 | DayZ | 223350 |
-| Subnautica | 447530 |
+| Subnautica (via Nitrox) | 264710 |
 | Palworld | 2394010 |
 | And more... | | See below |
 
@@ -181,7 +181,7 @@ ports:
 environment:
   - GAME_CONFIG=dayz
   - STEAM_APP_ID=223350
-  - GAME_EXECUTABLE=DayZServer.exe
+  - GAME_EXECUTABLE=DayZServer_x64.exe
   - GAME_PORT=2302
 
 ports:
@@ -189,20 +189,6 @@ ports:
   - "2303:2303/udp"
   - "2304:2304/udp"
   - "2305:2305/udp"
-```
-
-### Subnautica
-
-```yaml
-environment:
-  - GAME_CONFIG=subnautica
-  - STEAM_APP_ID=447530
-  - GAME_EXECUTABLE=SubnauticaServer.exe
-  - GAME_PORT=7777
-
-ports:
-  - "7777:7777/udp"
-  - "7778:7778/udp"
 ```
 
 ## Modded Servers

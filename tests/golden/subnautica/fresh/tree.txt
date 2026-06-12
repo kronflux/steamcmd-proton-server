@@ -1,2 +1,0 @@
-d @DATA@/config
-f @DATA@/config/serverconfig.ini

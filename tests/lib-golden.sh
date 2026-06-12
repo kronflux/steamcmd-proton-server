@@ -10,11 +10,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GOLDEN_DIR="${REPO_ROOT}/tests/golden"
 source "${REPO_ROOT}/tests/lib-legacy-args.sh"
 
-ALL_GAMES=(valheim subnautica dayz starrupture scum sons-of-the-forest sons-of-the-forest-modded vein subnautica-nitrox)
+ALL_GAMES=(valheim dayz starrupture scum sons-of-the-forest sons-of-the-forest-modded vein subnautica-nitrox)
 # Games whose config generators have migrate-existing-files branches → extra "seeded" scenario.
 SEEDED_GAMES=(sons-of-the-forest starrupture vein scum subnautica-nitrox)
 # Proton games have an args golden; native games record a sentinel.
-PROTON_GAMES=(sons-of-the-forest sons-of-the-forest-modded valheim subnautica dayz starrupture scum)
+PROTON_GAMES=(sons-of-the-forest sons-of-the-forest-modded valheim dayz starrupture scum)
 
 is_in() { local x="$1"; shift; local i; for i in "$@"; do [[ "$i" == "$x" ]] && return 0; done; return 1; }
 needs_root_ns() { [[ "$1" == "subnautica-nitrox" ]]; }
