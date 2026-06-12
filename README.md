@@ -7,12 +7,14 @@
 
 ## Features
 
-- **Universal Support** - Works with any Windows-based Steam dedicated server
-- **Proton-Powered** - Uses GE-Proton for maximum compatibility
+- **Universal Support** - Works with any Windows-based Steam dedicated server (and native Linux servers)
+- **Proton-Powered** - Uses GE-Proton for maximum compatibility (pin a version with `PROTON_VERSION`)
 - **Three Operation Modes** - SteamCMD download, URL download, or direct file mounting
-- **Game Presets** - Pre-configured support for popular games (SotF, Valheim, DayZ, Subnautica via Nitrox, Star Rupture, Vein, SCUM)
+- **Game Modules** - Each supported game is a self-contained module (SotF, Valheim, DayZ, Subnautica via Nitrox, Star Rupture, Vein, SCUM)
+- **Runtime Extensible** - Add or patch games via `/data/games/` overlays and run `/data/hooks/` scripts — no image rebuild
+- **Built-in Diagnostics** - `doctor.sh` one-command diagnosis plus automatic crash capture with actionable hints
 - **Automated Backups** - Built-in backup system with configurable retention
-- **Health Monitoring** - Container health checks for process monitoring
+- **Health Monitoring** - Container health checks with per-game probes
 - **Log Rotation** - Automatic log management to prevent disk filling
 - **RCON Support** - Integrated RCON CLI for server management
 
@@ -21,13 +23,16 @@
 This container supports any Windows-based Steam dedicated server, including:
 
 | Game | Steam App ID |
-|------|-------------|--------|
+|------|--------------|
 | Sons of the Forest | 2465200 |
 | Valheim | 896660 |
 | DayZ | 223350 |
 | Subnautica (via Nitrox) | 264710 |
-| Palworld | 2394010 |
-| And more... | | See below |
+| Star Rupture | 3809400 |
+| Vein | 2131400 |
+| SCUM | 3792580 |
+| Palworld | 2394010 (generic) |
+| And more... | see below |
 
 ## Quick Start
 
@@ -128,13 +133,13 @@ environment:
 ```
 
 #### Direct Mode
-Uses pre-existing game files (must be mounted to `/game`):
+Uses pre-existing game files (mounted at the game directory, `/data/server`):
 
 ```yaml
 environment:
   - GAME_MODE=direct
 volumes:
-  - ./existing-game-files:/game
+  - ./existing-game-files:/data/server
 ```
 
 ## Game Presets
@@ -189,6 +194,59 @@ ports:
   - "2303:2303/udp"
   - "2304:2304/udp"
   - "2305:2305/udp"
+```
+
+### Star Rupture
+
+```yaml
+environment:
+  - GAME_CONFIG=starrupture
+  - SERVER_NAME=Star Rupture Server
+  - GAME_PORT=7777
+  - QUERY_PORT=27015
+
+ports:
+  - "7777:7777/tcp"
+  - "7777:7777/udp"
+  - "27015:27015/udp"
+```
+
+### Vein
+
+Vein ships a **native Linux** dedicated server (free, anonymous login) — the module runs it
+directly as a non-root user, no Proton. Server settings live in `/data/config/Game.ini` after
+first run.
+
+```yaml
+environment:
+  - GAME_CONFIG=vein
+  - SERVER_NAME=Vein Server
+  - MAX_PLAYERS=16
+  - GAME_PORT=7777
+  - QUERY_PORT=27015
+
+ports:
+  - "7777:7777/udp"
+  - "27015:27015/udp"
+```
+
+### SCUM
+
+SCUM uses three consecutive ports — players connect on the game port + 2. The Windows runtime
+libraries it needs are provisioned into the Wine prefix automatically on first start
+(`WINETRICKS_VERBS`, preset default). Settings live in `/data/config/ServerSettings.ini`.
+
+```yaml
+environment:
+  - GAME_CONFIG=scum
+  - MAX_PLAYERS=64
+  - GAME_PORT=7777
+  - QUERY_PORT=7779
+
+ports:
+  - "7777:7777/udp"
+  - "7778:7778/udp"
+  - "7779:7779/tcp"
 ```
 
 ## Modded Servers
@@ -278,6 +336,40 @@ ports:
 
 5. Start the container
 
+## Extending Without Rebuilding
+
+Everything game-specific is a **module** that can also live on your data volume — so you can add
+a new game or patch a shipped one on a running deployment, with no image rebuild:
+
+```
+/data/games/<name>/preset.conf   # overrides (or adds) the game's environment defaults
+/data/games/<name>/setup.sh      # overrides (or adds) the game's hook functions
+```
+
+Resolution is per-file (your overlay wins over the baked module), and the startup log announces
+`(USER OVERRIDE)` when an overlay is active. See `docs/ADDING_GAMES.md` for the full module
+anatomy, hook contract, and development loop.
+
+User lifecycle hooks run at fixed points (great for mod installs and tweaks):
+
+```
+/data/hooks/post-install.sh      # after download + config generation
+/data/hooks/pre-start.sh         # immediately before launch
+```
+
+Runtime knobs (env vars, no rebuild):
+
+| Variable | Effect |
+|---|---|
+| `WINETRICKS_VERBS` | Windows runtime libs provisioned into the Wine prefix (re-runs when the list changes) |
+| `WINETRICKS_FORCE=true` | Re-provision unconditionally on next start |
+| `PROTON_VERSION=GE-Proton10-34` | Pin (and auto-download) an exact GE-Proton release |
+| `CRASH_CAPTURE_SECONDS` | Fast-exit crash capture threshold (default 60; 0 disables) |
+| `WINEDEBUG=err+all,fixme-all` | Surface Wine loader errors when a Windows server crashes silently |
+
+You can also extend the failure-hint table the diagnostics use: drop `regex<TAB>hint` lines into
+`/data/diagnostics.d/*.conf`.
+
 ## Advanced Features
 
 ### Automated Backups
@@ -351,27 +443,38 @@ environment:
 
 ```
 /data
-├── config/          # Generated configuration files
+├── server/          # Game installation (downloaded by SteamCMD)
+├── config/          # Generated configuration files (symlinked into the game tree)
+├── saves/           # Game save data (symlinked into the game tree)
 ├── logs/            # Server logs with rotation
-├── savefiles/       # Game save data
-└── backups/         # Automated backups
-
-/game                # Game installation (Steam Mode)
+├── backups/         # Automated backups
+├── games/           # Optional: your module overlays (see Extending Without Rebuilding)
+├── hooks/           # Optional: post-install.sh / pre-start.sh
+└── diagnostics.d/   # Optional: extra failure-hint rules
 ```
 
 ## Finding Your Game's Configuration
 
 1. **Steam App ID**: Visit [SteamDB](https://steamdb.info/apps/) and search for your game
 
-2. **Executable Name**: Check game documentation or run:
+2. **Executable Name**: Check game documentation, or after the download completes:
    ```bash
-   docker run --rm -v ./game:/game kronflux/steamcmd-proton-server:latest \
-     bash -c "find /game -name '*.exe' | grep -i server"
+   docker exec game-server bash -c "find /data/server -name '*.exe' | grep -i server"
    ```
 
 3. **Required Ports**: Check game documentation or SteamDB
 
 ## Troubleshooting
+
+**Start with the built-in doctor** — it checks the module, environment, files, Proton/Wine state,
+ports, logs (with known-failure hints), and resources in one shot:
+
+```bash
+docker exec game-server /scripts/doctor.sh
+```
+
+When a server dies shortly after launch, the container automatically prints the log tail and any
+matched failure hints to the console — check `docker logs` first.
 
 ### Container Exits Immediately
 
@@ -453,19 +556,30 @@ docker run --rm -v /tmp/test:/data steamcmd-proton-server:test \
 
 ## Architecture
 
-This container uses a modular script architecture:
+The core is **game-agnostic**; every game is a self-contained module:
 
 ```
-entrypoint.sh          # Main orchestrator
-├── 00_firstrun.sh     # First-time setup
-├── 01_steam.sh        # SteamCMD init
-├── 02_server.sh       # Game server download/update
-├── 03_config.sh       # Config generation
-├── start.sh           # Server startup
-├── healthcheck.sh     # Health monitoring
-├── backup.sh          # Backup automation
-└── functions.sh       # Shared utilities
+scripts/
+├── entrypoint.sh          # Main orchestrator
+├── 00_firstrun.sh         # First-time setup
+├── 01_steam.sh            # SteamCMD + GE-Proton init (PROTON_VERSION pinning)
+├── 02_server.sh           # Game download/update (steam | download | direct)
+├── 03_config.sh           # Config generation (dispatches to the module)
+├── start.sh               # Launch (Proton pipeline, or the module's game_start)
+├── healthcheck.sh         # Health monitoring (module probe or generic)
+├── doctor.sh              # One-command diagnosis
+├── backup.sh              # Backup automation
+├── functions.sh           # Shared utilities (loader, persist helpers, diagnostics)
+├── diagnostics.d/         # Failure-signature hint table
+└── games/<name>/          # ONE MODULE PER GAME
+    ├── preset.conf        #   environment defaults
+    └── setup.sh           #   optional hooks: game_configure, game_args,
+                           #   game_start, game_healthcheck, game_verify_install
 ```
+
+Modules resolve per-file, first match wins: `/data/games/<name>/` (user overlay) →
+`/scripts/games/<name>/` (baked). Adding a game touches no core script — see
+`docs/ADDING_GAMES.md`.
 
 ### Key Components
 
@@ -484,11 +598,9 @@ Contributions are welcome! Please:
 3. Make your changes
 4. Submit a pull request
 
-For game preset additions, please include:
-- Steam App ID
-- Executable name
-- Required ports
-- Any special configuration needs
+For new games, follow `docs/ADDING_GAMES.md` — start from `scripts/games/_template/` and include:
+- Steam App ID, executable name, and required ports (verified against a real source)
+- Example compose file, Unraid template, `.env.example` block, and a golden baseline
 
 ## License
 
