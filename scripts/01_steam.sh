@@ -37,6 +37,21 @@ fi
 mkdir -p /steamapps/compatdata
 mkdir -p /root/.steam/steam/steamapps/compatdata
 
+# Pinned GE-Proton version: download the exact release tag if not present.
+# Runs BEFORE the generic check so a missing pin doesn't trigger a wasted
+# latest-version download.
+if [[ -n "${PROTON_VERSION:-}" ]] && [[ ! -d "/root/.steam/steam/compatibilitytools.d/${PROTON_VERSION}" ]]; then
+    log_info "Downloading pinned GE-Proton: ${PROTON_VERSION}"
+    pinned_url="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${PROTON_VERSION}/${PROTON_VERSION}.tar.gz"
+    mkdir -p /root/.steam/steam/compatibilitytools.d
+    if ! curl -fsSL "$pinned_url" | tar -xz -C /root/.steam/steam/compatibilitytools.d; then
+        log_error "Failed to download ${PROTON_VERSION} from ${pinned_url}"
+        log_error "Valid tags: https://github.com/GloriousEggroll/proton-ge-custom/releases"
+        exit 1
+    fi
+    log_success "GE-Proton ${PROTON_VERSION} installed"
+fi
+
 # Detect and set up GE-Proton
 log_info "Checking GE-Proton installation..."
 if ! detect_proton; then

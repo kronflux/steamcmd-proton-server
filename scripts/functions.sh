@@ -38,6 +38,18 @@ detect_proton() {
     # Search for GE-Proton in compatibility tools directory
     local compat_dir="/root/.steam/steam/compatibilitytools.d"
 
+    # Pinned version wins when requested.
+    if [[ -n "${PROTON_VERSION:-}" ]]; then
+        if [[ -d "${compat_dir}/${PROTON_VERSION}" ]]; then
+            PROTONPATH="${compat_dir}/${PROTON_VERSION}"
+            log_info "Using pinned Proton: $PROTONPATH"
+            return 0
+        fi
+        log_error "PROTON_VERSION=${PROTON_VERSION} is not installed under ${compat_dir}"
+        log_error "Valid tags: https://github.com/GloriousEggroll/proton-ge-custom/releases"
+        return 1
+    fi
+
     if [[ -d "$compat_dir" ]]; then
         # Find all GE-Proton versions
         local proton_versions=($(find "$compat_dir" -maxdepth 1 -type d -name "GE-Proton*" | sort -V))
@@ -63,6 +75,15 @@ detect_proton() {
 
 get_proton_executable() {
     local compat_dir="/root/.steam/steam/compatibilitytools.d"
+
+    # Pinned version wins when requested (non-logging variant).
+    if [[ -n "${PROTON_VERSION:-}" ]]; then
+        if [[ -d "${compat_dir}/${PROTON_VERSION}" ]]; then
+            echo "${compat_dir}/${PROTON_VERSION}/proton"
+            return 0
+        fi
+        return 1
+    fi
 
     if [[ -d "$compat_dir" ]]; then
         local proton_versions=($(find "$compat_dir" -maxdepth 1 -type d -name "GE-Proton*" | sort -V))

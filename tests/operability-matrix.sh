@@ -85,5 +85,27 @@ PFX2="$T/prefix2"; mkdir -p "$PFX2/pfx"; touch "$PFX2/.winetricks_done"
 STEAM_COMPAT_DATA_PATH="$PFX2" WINETRICKS_VERBS="vcrun2017" PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
 check "marker: legacy boolean adopted without re-run" '[[ "$(wt_runs)" == "3" && -f "$PFX2/.winetricks_verbs.sha256" && ! -f "$PFX2/.winetricks_done" ]]'
 
+############################
+# Section 4: PROTON_VERSION pinning
+############################
+# detect_proton hardcodes the compat dir; test the pin logic through a sandboxed
+# clone of the function with the path substituted.
+FAKE_COMPAT="$T/compat"; mkdir -p "$FAKE_COMPAT/GE-Proton9-1" "$FAKE_COMPAT/GE-Proton10-34"
+eval "$(sed -n '/^detect_proton()/,/^}/p' "${REPO_ROOT}/scripts/functions.sh" | sed "s|/root/.steam/steam/compatibilitytools.d|$FAKE_COMPAT|")"
+
+pin_path=""
+PROTON_VERSION="GE-Proton9-1" detect_proton >/dev/null 2>&1 && pin_path="$PROTONPATH"
+check "pin: pinned older version wins over newer" '[[ "$pin_path" == *"/GE-Proton9-1" ]]'
+
+rc=0; PROTON_VERSION="GE-Proton99-99" detect_proton >/dev/null 2>&1 || rc=$?
+check "pin: missing pinned version fails loud" '[[ $rc -ne 0 ]]'
+
+unset PROTON_VERSION
+detect_proton >/dev/null 2>&1 || true
+check "pin: unset falls back to latest present" '[[ "$PROTONPATH" == *"/GE-Proton10-34" ]]'
+
+url_line="$(grep -c 'releases/download/\${PROTON_VERSION}/\${PROTON_VERSION}.tar.gz' "${REPO_ROOT}/scripts/01_steam.sh" || true)"
+check "pin: 01_steam builds exact tag URL" '[[ "$url_line" == "1" ]]'
+
 echo "OPERABILITY $( [[ $fail -eq 0 ]] && echo PASS || echo FAIL ) (${pass}/${total})"
 [[ $fail -eq 0 ]]
