@@ -45,5 +45,15 @@ unset GAME_MODULE_PRESET_PATH GAME_MODULE_SETUP_PATH
 GAME_CONFIG=vein load_game_module >/dev/null 2>&1 || true
 check "loader exports provenance globals" '[[ "${GAME_MODULE_PRESET_PATH:-}" == *"/scripts/games/vein/preset.conf" ]]'
 
+############################
+# Section 2: doctor.sh
+############################
+# Doctor runs degradedly on the dev box: must not crash, must emit sections + RESULT.
+drc=0
+dout="$(GAME_CONFIG=vein DATA_DIR="$DATA_DIR" GAME_DIR="$T/game" bash "${REPO_ROOT}/scripts/doctor.sh" 2>&1)" || drc=$?
+check "doctor: runs to completion off-container" '[[ "$dout" == *"RESULT:"* ]]'
+check "doctor: module provenance reported" '[[ "$dout" == *"scripts/games/vein/preset.conf"* ]]'
+check "doctor: exit code reflects severity (1 or 2 in degraded env)" '[[ $drc -eq 1 || $drc -eq 2 ]]'
+
 echo "OPERABILITY $( [[ $fail -eq 0 ]] && echo PASS || echo FAIL ) (${pass}/${total})"
 [[ $fail -eq 0 ]]
