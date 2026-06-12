@@ -18,7 +18,7 @@ FIRST_RUN=false
 
 main() {
     log_info "========================================="
-    log_info "SteamCMD Proton Server v1.0.0"
+    log_info "SteamCMD Proton Server (${IMAGE_GIT_SHA:-dev}, built ${IMAGE_BUILD_DATE:-unknown})"
     log_info "========================================="
 
     # Load game preset if specified

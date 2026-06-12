@@ -6,6 +6,13 @@ LABEL maintainer="Richard M <richard@rmoser.ca>"
 LABEL description="Universal Docker container for Windows-based Steam dedicated servers using Proton"
 LABEL version="1.0.0"
 
+# Build provenance — wired by CI (build-args), surfaced in the entrypoint banner
+# and doctor.sh. Local builds show dev/unknown.
+ARG GIT_SHA=dev
+ARG BUILD_DATE=unknown
+ENV IMAGE_GIT_SHA=${GIT_SHA} \
+    IMAGE_BUILD_DATE=${BUILD_DATE}
+
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
