@@ -134,12 +134,9 @@ services:
 #
 # DayZ:
 #   STEAM_APP_ID=223350
-#   GAME_EXECUTABLE=DayZServer.exe
+#   GAME_EXECUTABLE=DayZServer_x64.exe
 #   GAME_PORT=2302
 #   QUERY_PORT=2303
 #
-# Subnautica:
-#   STEAM_APP_ID=447530
-#   GAME_EXECUTABLE=SubnauticaServer.exe
-#   GAME_PORT=7777
-#   QUERY_PORT=7778
+# Subnautica (via Nitrox — see examples/subnautica-nitrox/):
+#   GAME_CONFIG=subnautica-nitrox

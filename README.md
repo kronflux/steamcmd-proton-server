@@ -10,7 +10,7 @@
 - **Universal Support** - Works with any Windows-based Steam dedicated server
 - **Proton-Powered** - Uses GE-Proton for maximum compatibility
 - **Three Operation Modes** - SteamCMD download, URL download, or direct file mounting
-- **Game Presets** - Pre-configured support for popular games (SotF, Valheim, DayZ, Subnautica)
+- **Game Presets** - Pre-configured support for popular games (SotF, Valheim, DayZ, Subnautica via Nitrox, Star Rupture, Vein, SCUM)
 - **Automated Backups** - Built-in backup system with configurable retention
 - **Health Monitoring** - Container health checks for process monitoring
 - **Log Rotation** - Automatic log management to prevent disk filling

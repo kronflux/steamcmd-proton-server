@@ -10,7 +10,7 @@ services:
     environment:
       # Core Configuration
       - GAME_CONFIG=subnautica-nitrox
-      - STEAM_APP_ID=447530              # Subnautica App ID
+      - STEAM_APP_ID=264710              # Subnautica App ID (preset enforces this)
       - GAME_EXECUTABLE=Subnautica.exe
       - GAME_MODE=steam
 
