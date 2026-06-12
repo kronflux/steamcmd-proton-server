@@ -13,7 +13,7 @@ game_args() {
 }
 
 game_healthcheck() {
-    local query_port="${QUERY_PORT:-7779}"
+    local query_port="${QUERY_PORT:-$(( ${GAME_PORT:-7777} + 2 ))}"
     # SCUM's query / connect port is TCP (game port + 2).
     if command -v nc &> /dev/null; then
         if nc -z -w 2 127.0.0.1 "$query_port" 2>/dev/null; then
