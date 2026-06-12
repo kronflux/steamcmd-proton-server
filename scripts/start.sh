@@ -121,14 +121,47 @@ provision_wine_deps() {
         return 0
     fi
 
+    # Locate a wine binary. Prefer GE-Proton's bundled wine — it is the exact
+    # wine that runs the game, so the libs land in a prefix the runtime agrees
+    # with. On Debian the system wine lives in /usr/lib/wine/ (NOT on PATH as
+    # wine/wine64), so 'command -v wine' finds nothing — never rely on it.
+    # This block must stay set -e safe and non-fatal: a missing wine (or missing
+    # lib) should let the server attempt to launch and surface its own error,
+    # never silently kill the container during provisioning.
+    local wine_bin="" candidate
+    for candidate in \
+        "${PROTONPATH:+${PROTONPATH}/files/bin/wine64}" \
+        "${PROTONPATH:+${PROTONPATH}/files/bin/wine}" \
+        /usr/lib/wine/wine64 \
+        /usr/lib/wine/wine; do
+        if [[ -n "$candidate" && -x "$candidate" ]]; then
+            wine_bin="$candidate"
+            break
+        fi
+    done
+    # Last resort: PATH lookup. The trailing '|| true' keeps the assignment
+    # exit-0 so a missing binary can never trip set -e and kill the container.
+    if [[ -z "$wine_bin" ]]; then
+        wine_bin="$(command -v wine64 2>/dev/null || command -v wine 2>/dev/null || true)"
+    fi
+    if [[ -z "$wine_bin" ]]; then
+        log_warn "No wine binary found — skipping winetricks provisioning (${WINETRICKS_VERBS})"
+        log_warn "The server will still launch; a missing-DLL crash afterwards points back here."
+        return 0
+    fi
+
     log_info "Provisioning Wine runtime deps via winetricks: ${WINETRICKS_VERBS}"
+    log_info "Using wine: ${wine_bin}"
     log_info "(this can take several minutes)"
 
     # Install into the same prefix the game runs in. mscoree/mshtml=d skips the
     # Mono/Gecko install prompts. Word-splitting of the verb list is intentional.
-    local wine_bin; wine_bin="$(command -v wine64 || command -v wine)"
+    # Point WINESERVER at the matching binary and prepend its dir to PATH so
+    # winetricks' internal wine/wineserver lookups resolve to this same build.
+    local wine_dir; wine_dir="$(dirname "$wine_bin")"
     # shellcheck disable=SC2086
-    if WINE="$wine_bin" WINEPREFIX="${STEAM_COMPAT_DATA_PATH}/pfx" \
+    if WINE="$wine_bin" WINESERVER="${wine_dir}/wineserver" PATH="${wine_dir}:${PATH}" \
+       WINEPREFIX="${STEAM_COMPAT_DATA_PATH}/pfx" \
        WINEDLLOVERRIDES="mscoree=d;mshtml=d" WINEDEBUG="-all" \
        winetricks -q -f ${WINETRICKS_VERBS} >> "$log_file" 2>&1; then
         printf '%s' "$want_hash" > "$marker"
@@ -136,6 +169,7 @@ provision_wine_deps() {
         log_success "Wine runtime deps installed"
     else
         log_warn "winetricks reported errors — the server may still fail if deps are missing"
+        log_warn "See ${log_file} for the winetricks output."
     fi
 }
 

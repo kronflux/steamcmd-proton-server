@@ -85,6 +85,16 @@ PFX2="$T/prefix2"; mkdir -p "$PFX2/pfx"; touch "$PFX2/.winetricks_done"
 STEAM_COMPAT_DATA_PATH="$PFX2" WINETRICKS_VERBS="vcrun2017" PATH="$WT:$PATH" provision_wine_deps >/dev/null 2>&1
 check "marker: legacy boolean adopted without re-run" '[[ "$(wt_runs)" == "3" && -f "$PFX2/.winetricks_verbs.sha256" && ! -f "$PFX2/.winetricks_done" ]]'
 
+# Regression (SCUM crash 2026-06-12): wine not on PATH made the bare
+# wine_bin=$(...) assignment fail under set -e and silently kill the container.
+# winetricks present but NO wine binary discoverable → must return 0, not abort.
+WTONLY="$T/wtonly"; mkdir -p "$WTONLY"; cp "$WT/winetricks" "$WTONLY/winetricks"
+PFX3="$T/prefix3"; mkdir -p "$PFX3/pfx"
+wt_rc=0
+( set -e; PATH="$WTONLY:/usr/bin:/bin" PROTONPATH="" STEAM_COMPAT_DATA_PATH="$PFX3" \
+    WINETRICKS_VERBS="vcrun2017" provision_wine_deps ) >/dev/null 2>&1 || wt_rc=$?
+check "marker: missing wine binary is non-fatal (no set -e abort)" '[[ $wt_rc -eq 0 ]]'
+
 ############################
 # Section 4: PROTON_VERSION pinning
 ############################
