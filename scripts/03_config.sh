@@ -24,9 +24,6 @@ generate_game_config() {
             generate_sotf_config
             install_redloader
             ;;
-        valheim)
-            generate_valheim_config
-            ;;
         subnautica)
             generate_subnautica_config
             ;;
@@ -245,36 +242,6 @@ generate_sotf_config() {
 
     log_info "Config: ${data_cfg_dir}/"
     log_info "Saves:  ${data_saves_dir}/"
-}
-
-# Valheim Configuration
-generate_valheim_config() {
-    log_info "Generating Valheim configuration..."
-
-    local config_dir="${DATA_DIR}/config"
-    local save_dir="${DATA_DIR}/savefiles"
-
-    mkdir -p "$config_dir" "$save_dir"
-
-    cat > "${config_dir}/adminlist.txt" << EOF
-# Admin list - one SteamID per line
-EOF
-
-    cat > "${config_dir}/bannedlist.txt" << EOF
-# Banned players - one SteamID per line
-EOF
-
-    cat > "${config_dir}/permittedlist.txt" << EOF
-# Permitted players - one SteamID per line
-EOF
-
-    # Valheim uses start parameters, not config files
-    export VALHEIM_SERVER_NAME="${SERVER_NAME:-Valheim Docker Server}"
-    export VALHEIM_SERVER_PASSWORD="${SERVER_PASSWORD:-}"
-    export VALHEIM_SERVER_PORT="${GAME_PORT:-2456}"
-    export VALHEIM_WORLD_NAME="${WORLD_NAME:-Dedicated}"
-
-    log_success "Valheim configuration created"
 }
 
 # Subnautica Configuration

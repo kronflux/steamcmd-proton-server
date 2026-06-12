@@ -63,9 +63,6 @@ main() {
             scum)
                 check_scum_health
                 ;;
-            valheim)
-                check_valheim_health
-                ;;
             *)
                 # Generic health check - just verify process
                 log_debug "Health check: Generic (process running)"
@@ -90,19 +87,6 @@ check_sotf_health() {
             log_debug "Health check: SotF query port responsive"
         else
             log_warn "Health check: SotF query port not responding"
-        fi
-    fi
-}
-
-check_valheim_health() {
-    local game_port="${GAME_PORT:-2456}"
-
-    # Check if port is listening
-    if command -v nc &> /dev/null; then
-        if nc -z -u -w 2 127.0.0.1 "$game_port" 2>/dev/null; then
-            log_debug "Health check: Valheim port responsive"
-        else
-            log_warn "Health check: Valheim port not responding"
         fi
     fi
 }

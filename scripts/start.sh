@@ -365,9 +365,6 @@ main() {
                     base_args="-verboseLogging"
                 fi
                 ;;
-            valheim)
-                base_args="-batchmode -nographics -port ${GAME_PORT:-2456} -name \"${SERVER_NAME}\" -password \"${SERVER_PASSWORD:-}\" -world \"${WORLD_NAME:-Dedicated}\" -public 1"
-                ;;
             subnautica)
                 base_args="-batchmode -nographics"
                 ;;
